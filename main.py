@@ -5,8 +5,13 @@ import pygame.gfxdraw
 from pygame.locals import *
 from mySprite import SpriteCards, Color, Number
 from myMath import *
-from myCards import DrawableCard, Deck
-from myPlayers import Player
+from myCards import Deck, Card
+from myDrawables import DrawableCard
+from myPlayers import Player, Hand
+from myGame import Game
+
+
+
 
 
 import os, sys
@@ -23,12 +28,19 @@ fake_screen = screen.copy()
 print(os.getcwd())
 
 
-ss = SpriteCards('sprites.png')
+spritesCards = SpriteCards('sprites.png')
+
+deck = Deck()
+
+g = Game()
+g.addPlayer(Player(Hand()))
+g.dealAll7(deck)
+
 
 click_pos = (0, 0)
 
-c = DrawableCard(Color.GREEN, Number.THREE, (400, RESOLUTION[1]*0.75), 0)
-c.getImage(ss)
+c = DrawableCard(spritesCards, Card(Color.GREEN, Number.THREE), (400, RESOLUTION[1]*0.75), 30)
+
 
 done = False
 is_blue = True
@@ -39,16 +51,10 @@ clock = pygame.time.Clock()
 
 fond = pygame.image.load("table.jpg").convert()
 
-
-deck = Deck()
-
-p1 = Player()
-p1.dealn(deck, 7)
-
 while not done:
 
     screen.fill((0, 0, 0))
-    screen.blit(c.image_, c.pos_)
+    screen.blit(c.getImage(), c.pos_)
 
 
     if c.isPointIn(pygame.mouse.get_pos()):
