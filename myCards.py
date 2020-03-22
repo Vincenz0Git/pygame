@@ -27,22 +27,21 @@ class DrawableCard(Sprite,Card):
         # This could also be an image loaded from the disk.
         self.image_ = None
 
-        self.polygon_ = [   (0,0),
-                            (DrawableCard.SCALE[0],0),
-                            (DrawableCard.SCALE[0],DrawableCard.SCALE[1]),
-                            (0,DrawableCard.SCALE[1])
-                        ]
+        self.polygon_ = [(0, 0),
+                         (DrawableCard.SCALE[0], 0),
+                         (DrawableCard.SCALE[0], DrawableCard.SCALE[1]),
+                         (0, DrawableCard.SCALE[1])]
 
         # Fetch the rectangle object that has the dimensions of the image
         # Update the position of this object by setting the values of rect.x and rect.y
         self.draggable_ = False
 
-    def getImage(self,spritesheet):
+    def getImage(self, spritesheet):
         self.image_ = spritesheet.getCardImage(self.color_,self.number_,DrawableCard.SCALE)
 
     def getPolygonTransformed(self):
-        rl = rotatelist(self.polygon_,(0,0),self.rot_*math.pi/180)
-        return translatelist(rl,self.pos_)
+        rl = rotatelist(self.polygon_, (0, 0), self.rot_*math.pi/180)
+        return translatelist(rl, self.pos_)
 
     def get3Vertices(self):
         return itemgetter(0,1,3)(self.getPolygonTransformed())
@@ -52,6 +51,7 @@ class DrawableCard(Sprite,Card):
 
     def update(self):
         pass
+
 
 class Deck:
     def __init__(self):
@@ -79,6 +79,6 @@ class Deck:
     def shuffle(self):
         shuffle(self.cards_)
 
-    def deal1(self):
+    def takeTopCard(self):
         self.ncards_ -= 1
         return self.cards_.pop()
