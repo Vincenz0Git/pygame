@@ -7,12 +7,7 @@ from mySprite import SpriteCards, Color, Number
 from myMath import *
 from myCards import Deck, Card
 from myDrawables import DrawableCard
-from myPlayers import Player, Hand
-from myGame import Game
-
-
-
-
+from myGame import Game, Player
 
 import os, sys
 
@@ -30,11 +25,11 @@ print(os.getcwd())
 
 spritesCards = SpriteCards('sprites.png')
 
-deck = Deck()
-
 g = Game()
-g.addPlayer(Player(Hand()))
-g.dealAll7(deck)
+g.new(3)
+g.dealAll7()
+
+sys.exit(0)
 
 
 click_pos = (0, 0)

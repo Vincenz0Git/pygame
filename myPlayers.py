@@ -1,6 +1,3 @@
-from myDrawables import DrawableCard
-
-
 class Hand:
     def __init__(self):
         self.cards_ = []
@@ -12,10 +9,6 @@ class Hand:
     def addn(self, deck, n):
         for _ in range(n):
             self.add1(deck)
-
-class DrawableHand(Hand):
-    def __init__(self):
-        Hand.__init__(self)
 
 
 class Player:

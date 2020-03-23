@@ -9,24 +9,57 @@ class Card:
         self.number_ = number
 
     def __repr__(self):
-        return "{} {}".format(self.color_, self.number_)
+        return self.color_.name[0] + str(self.number_.value)
+        #return "{} {}".format(self.color_, self.number_)
 
 
-class Deck:
+class Pile:
     def __init__(self):
         self.cards_ = []
-        self.ncards_ = 108
-        self.generateDeck()
+        self.ncards_ = 0
+
+    def __repr__(self):
+        return "{}".format(self.ncards_)
+
+
+class CenterCards(Pile):
+    def __init__(self):
+        Pile.__init__(self)
+
+    def new(self, deck, n):
+        self.ncards_ = n
+        for _ in range(n):
+            self.cards_.append(deck.takeTopCard())
+
+    def __repr__(self):
+        return "(Center "+Pile.__repr__(self)+")"
+
+
+class Discards(Pile):
+    def __init__(self):
+        Pile.__init__(self)
+
+    def __repr__(self):
+        return "(Discards "+Pile.__repr__(self)+")"
+
+
+class Deck(Pile):
+    def __init__(self):
+        Pile.__init__(self)
+        self.new()
         self.shuffle()
-        for i in range(7):
-            print(self.cards_[i])
+        # for i in range(7):
+        #     print(self.cards_[i])
 
     def generateCards(self, color, number, repetition):
         # generate "repetition" cards with "number" and "color"
         for i in range(repetition):
             self.cards_.append(Card(color, number))
 
-    def generateDeck(self):
+    def new(self):
+        # Create fresh deck of cards with given set of cards given by
+        # the rules
+        self.ncards_ = 108
         l3of = [Number.ONE, Number.THREE, Number.FOUR, Number.FIVE, Number.TWO]
         l2of = [Number.SIX, Number.SEVEN, Number.EIGHT, Number.NINE,
                 Number.TEN, Number.JOKER]
@@ -43,3 +76,6 @@ class Deck:
     def takeTopCard(self):
         self.ncards_ -= 1
         return self.cards_.pop()
+
+    def __repr__(self):
+        return "(Deck "+Pile.__repr__(self)+")"
