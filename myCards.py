@@ -1,10 +1,13 @@
 from myMath import *
 from mySprite import Number, Color
 from random import shuffle
+from cst import Composition
 
 
 class Card:
-    def __init__(self, color, number):
+    # TODO definitely add uuid
+    def __init__(self, color, number, id=None):
+        self.uuid_ = id
         self.color_ = color
         self.number_ = number
 
@@ -20,39 +23,71 @@ class Card:
     def __eq__(self, autre):
         return self.number_ == autre.number_
 
-
-
     def __repr__(self):
         return self.color_.name[0] + str(self.number_.value)
         #return "{} {}".format(self.color_, self.number_)
 
 
 class Pile:
+    # Collection of card, useful methods to add and remove keeping the count
     def __init__(self):
         self.cards_ = []
         self.ncards_ = 0
 
+    def add(self, card):
+        self.ncards_ += 1
+        self.cards_.append(card)
+
+    def getn(self, n):
+        return self.cards_.pop(n)
+
+    def getbyid(self, id):
+        for i, card in enumerate(self.cards_):
+            if card.uuid_ == id:
+                return i, card
+
+    def takebyid(self, id):
+        i, _ = self.getbyid(id)
+        self.ncards_ -= 1
+        return self.cards_.pop(i)
+
+    def takeTop(self):
+        self.ncards_ -= 1
+        return self.cards_.pop()
+
     def __repr__(self):
-        return "{}".format(self.ncards_)
+        if self.ncards_ <= 10:
+            return "{}".format(self.ncards_) + ' '+' '.join([str(el) for el in self.cards_])
+        else:
+            return "{}".format(self.ncards_)
 
     def __getitem__(self, item):
         return self.cards_[item]
 
 
+class Hand(Pile):
+    # Set of cards held by a player (see Game.py)
+    def __init__(self):
+        Pile.__init__(self)
+
+
 class Center(Pile):
+    # Set of cards common to all players, min of 2 at each time
     def __init__(self):
         Pile.__init__(self)
 
     def new(self, deck, n):
-        self.ncards_ = n
+        self.ncards_ = 0
         for _ in range(n):
-            self.cards_.append(deck.takeTopCard())
+            self.add(deck.takeTop())
 
     def __repr__(self):
-        return "(Center "+Pile.__repr__(self)+' '+' '.join([str(el) for el in self.cards_])+")"
+        return "(Center "+Pile.__repr__(self)+")"
 
 
 class Discards(Pile):
+    # Discard pile, no card should normally come out, except if the
+    # deck is used up
     def __init__(self):
         Pile.__init__(self)
 
@@ -61,38 +96,24 @@ class Discards(Pile):
 
 
 class Deck(Pile):
+    # deck of 108 defined cards
     def __init__(self):
         Pile.__init__(self)
         self.new()
         self.shuffle()
+        print(len(list(Composition)))
         # for i in range(7):
         #     print(self.cards_[i])
-
-    def generateCards(self, color, number, repetition):
-        # generate "repetition" cards with "number" and "color"
-        for i in range(repetition):
-            self.cards_.append(Card(color, number))
 
     def new(self):
         # Create fresh deck of cards with given set of cards given by
         # the rules
         self.ncards_ = 108
-        l3of = [Number.ONE, Number.THREE, Number.FOUR, Number.FIVE, Number.TWO]
-        l2of = [Number.SIX, Number.SEVEN, Number.EIGHT, Number.NINE,
-                Number.TEN, Number.JOKER]
-
-        for col in list(Color):
-            for n in l3of:
-                self.generateCards(col, n, 3)
-            for n in l2of:
-                self.generateCards(col, n, 2)
+        for i, (col, num) in enumerate(Composition):
+            self.cards_.append(Card(col, num, i))
 
     def shuffle(self):
         shuffle(self.cards_)
-
-    def takeTopCard(self):
-        self.ncards_ -= 1
-        return self.cards_.pop()
 
     def __repr__(self):
         return "(Deck "+Pile.__repr__(self)+")"

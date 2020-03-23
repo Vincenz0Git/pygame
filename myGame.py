@@ -1,4 +1,4 @@
-from myCards import Deck, Center, Discards
+from myCards import Deck, Center, Discards, Hand
 from cst import Bonus
 
 
@@ -61,8 +61,8 @@ class Engine:
 
     def new(self):
         self.deck_.new()
-        #self.deck_.shuffle()
-        self.centralCards_.new(self.deck_, 3)
+        self.deck_.shuffle()
+        self.centralCards_.new(self.deck_, 2)
 
     def checkPlay(self, play):
         if play.isRight():
@@ -87,9 +87,10 @@ class Game(Engine):
 
     def dealAll7(self):
         for player in self.players_:
-            player.dealn(self.deck_, 12)
+            player.dealn(self.deck_, 7)
         #print(self.deck_, self.centralCards_, self.players_[0])
 
+        self.takeTurn()
         self.takeTurn()
 
     def new(self, nPlayers):
@@ -110,7 +111,7 @@ class Game(Engine):
         print('Player hand: ', currentPlayer)
 
         for i, card in enumerate(self.centralCards_):
-            # input simulate what the gui will provide
+            # input simulate what the gui/network will provide
             currentPlayer.setPlay(str(i), None, [])
             while not self.checkPlay(currentPlayer.plays_[str(i)]):
                 a = input('Play for {}: '.format(card)).split()
@@ -124,23 +125,44 @@ class Game(Engine):
 
             print(self.checkBonus(currentPlayer.plays_[str(i)]))
 
-        print('End turn')
-        print('=======================================================')
+        # When the plays are set and validated
+        for play in currentPlayer.plays_.values():
+            for card in play.inHand_:
+                # remove the cards from hand
+                self.discardPile_.add(currentPlayer.takeCardbyid(card.uuid_))
+            if len(play.inHand_) > 0:
+                # remove the cards from the pile and replace them by new ones
+                # from the deck
+                print(play.inBoard_.uuid_)
+                self.discardPile_.add(self.centralCards_.takebyid(play.inBoard_.uuid_))
+                self.centralCards_.add(self.deck_.takeTop())
 
+        print('End turn')
+
+        print(currentPlayer, self.discardPile_)
+
+        print('=======================================================')
         self.turn_ += 1
 
 
 class Player:
     def __init__(self):
-        self.hand_ = []
+        self.hand_ = Hand()
         self.plays_ = {}
 
     def deal1(self, deck):
-        self.hand_.append(deck.takeTopCard())
+        self.hand_.add(deck.takeTop())
 
     def dealn(self, deck, n):
         for _ in range(n):
             self.deal1(deck)
+
+    def getCard(self, n):
+        # get the nth card of the hand and remove it
+        return self.hand_.pop(n)
+
+    def takeCardbyid(self, id):
+        return self.hand_.takebyid(id)
 
     def setPlay(self, iplay, central, indicesHand):
         self.plays_[iplay] = Play(itemgetter(*indicesHand)(self.hand_), central)
