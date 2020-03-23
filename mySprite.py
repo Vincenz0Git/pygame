@@ -1,6 +1,6 @@
 import pygame
 
-from enum import Enum
+
 from cst import Color, Number
 
 class Spritesheet:

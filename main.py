@@ -4,14 +4,18 @@ import pygame
 import pygame.gfxdraw
 from pygame.locals import *
 from mySprite import SpriteCards, Color, Number
-from myMath import *
-from myCards import Deck, Card
 from myDrawables import DrawableCard
 from myGame import Game, Player
 
 import os, sys
 
 RESOLUTION = (1000, 500)
+
+g = Game()
+g.new(3)
+g.dealAll7()
+
+sys.exit(0)
 
 
 pygame.init()
@@ -25,11 +29,7 @@ print(os.getcwd())
 
 spritesCards = SpriteCards('sprites.png')
 
-g = Game()
-g.new(3)
-g.dealAll7()
 
-sys.exit(0)
 
 
 click_pos = (0, 0)

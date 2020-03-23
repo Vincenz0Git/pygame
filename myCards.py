@@ -1,5 +1,5 @@
 from myMath import *
-from mySprite import Number,Color
+from mySprite import Number, Color
 from random import shuffle
 
 
@@ -8,11 +8,19 @@ class Card:
         self.color_ = color
         self.number_ = number
 
+    def value(self, joker=None):
+        if not joker:
+            return self.number_.value
+        else:
+            return joker
+
+    def color(self):
+        return self.color_.name
+
     def __eq__(self, autre):
         return self.number_ == autre.number_
 
-    def __add__(self, autre):
-        return
+
 
     def __repr__(self):
         return self.color_.name[0] + str(self.number_.value)
@@ -26,6 +34,9 @@ class Pile:
 
     def __repr__(self):
         return "{}".format(self.ncards_)
+
+    def __getitem__(self, item):
+        return self.cards_[item]
 
 
 class Center(Pile):
