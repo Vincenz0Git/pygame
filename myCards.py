@@ -8,6 +8,12 @@ class Card:
         self.color_ = color
         self.number_ = number
 
+    def __eq__(self, autre):
+        return self.number_ == autre.number_
+
+    def __add__(self, autre):
+        return
+
     def __repr__(self):
         return self.color_.name[0] + str(self.number_.value)
         #return "{} {}".format(self.color_, self.number_)
@@ -22,7 +28,7 @@ class Pile:
         return "{}".format(self.ncards_)
 
 
-class CenterCards(Pile):
+class Center(Pile):
     def __init__(self):
         Pile.__init__(self)
 
@@ -32,7 +38,7 @@ class CenterCards(Pile):
             self.cards_.append(deck.takeTopCard())
 
     def __repr__(self):
-        return "(Center "+Pile.__repr__(self)+")"
+        return "(Center "+Pile.__repr__(self)+' '+' '.join([str(el) for el in self.cards_])+")"
 
 
 class Discards(Pile):

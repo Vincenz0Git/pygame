@@ -1,13 +1,28 @@
-from myCards import Deck, CenterCards
+from myCards import Deck, Center, Discards
 
 
-class Game:
+class Engine:
     def __init__(self):
+        self.deck_ = Deck()
+        self.centralCards_ = Center()
+        self.discardPile_ = Discards()
+
+    def new(self):
+        self.deck_.new()
+        #self.deck_.shuffle()
+        self.centralCards_.new(self.deck_, 2)
+
+    def checkPlay(self,cardsToPlay,toCenterCard):
+        if len(cardsToPlay) == 1:
+            return cardsToPlay[0] == 1
+
+
+class Game(Engine):
+    def __init__(self):
+        Engine.__init__(self)
         self.players_ = []
         self.turn_ = 0
-        self.deck_ = Deck()
         self.nPlayers_ = 0
-        self.centralCards_ = CenterCards()
 
     def addPlayer(self, player):
         print('new player join')
@@ -19,14 +34,12 @@ class Game:
         print(self.deck_, self.centralCards_, self.players_[0])
 
     def new(self, nPlayers):
+        Engine.new(self)
         for _ in range(nPlayers):
             self.addPlayer(Player())
 
-        self.deck_.new()
-        self.deck_.shuffle()
         self.turn_ = 0
         self.nPlayers_ = nPlayers
-        self.centralCards_.new(self.deck_, 2)
         print(self.deck_, self.centralCards_, self.players_[0])
 
 
@@ -43,7 +56,7 @@ class Player:
         for _ in range(n):
             self.deal1(deck)
 
-    def play1(self,central):
+    def play(self, central):
         pass
 
     def __repr__(self):

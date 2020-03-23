@@ -1,6 +1,7 @@
 import pygame
 
 from enum import Enum
+from cst import Color, Number
 
 class Spritesheet:
     def __init__(self, filename):
@@ -29,24 +30,6 @@ class Spritesheet:
                 for x in range(image_count)]
         return self.images_at(tups, colorkey)
 
-class Color(Enum):
-    RED     = 0
-    GREEN   = 1
-    BLUE    = 2
-    YELLOW  = 3
-
-class Number(Enum):
-    TEN     = 0
-    NINE    = 1
-    EIGHT   = 2
-    SEVEN   = 3
-    SIX     = 4
-    FIVE    = 5
-    FOUR    = 6
-    THREE   = 7
-    TWO     = 8
-    ONE     = 9
-    JOKER   = 10
 
 class SpriteCards(Spritesheet):
     H = 530
