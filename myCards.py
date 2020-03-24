@@ -51,6 +51,7 @@ class Pile:
         for i, card in enumerate(self.cards_):
             if card.uuid_ == id:
                 return i, card
+        return None
 
     def takebyid(self, id):
         i, _ = self.getbyid(id)
@@ -65,7 +66,7 @@ class Pile:
         return self.ncards_
 
     def __repr__(self):
-        if self.ncards_ <= 10:
+        if self.ncards_ <= 20:
             return "{}".format(self.ncards_) + ' '+' '.join([str(el) for el in self.cards_])
         else:
             return "{}".format(self.ncards_)
@@ -108,26 +109,26 @@ class Deck(Pile):
     # deck of 108 defined cards
     def __init__(self):
         Pile.__init__(self)
-        self.new()
-        self.shuffle()
         # for i in range(7):
         #     print(self.cards_[i])
 
     def new(self):
         # Create fresh deck of cards with given set of cards given by
-        # the rules
-        self.ncards_ = 108
+        # the deck.csv file
+        self.ncards_ = 0
         with open('deck.csv', 'r') as fid:
             d = csv.reader(fid, delimiter=',')
-            next(d)
-            for i, (col, num, rep) in enumerate(d):
+            next(d)  # ignore header
+            i = 0  # uuid for the card
+            for col, num, rep in d:
+                # create "rep" cards with number and color (num,col)
                 for _ in range(int(rep)):
-                    self.cards_.append(Card(Color[col], Number[num], i))
+                    self.add(Card(Color[col], Number[num], i))
                     if col == 'JOKER':
                         self.cards_[-1].joker_ = 'color'
                     elif num == 'JOKER':
                         self.cards_[-1].joker_ = 'number'
-
+                    i += 1
 
     def shuffle(self):
         shuffle(self.cards_)

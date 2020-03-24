@@ -24,7 +24,7 @@ class Player:
         self.plays_[iplay] = play
 
     def __repr__(self):
-        return '(Player '+' '.join([str(el) for el in self.hand_]) + ')'
+        return '(Player '+ str(self.hand_) + ')'
 
     def __getitem__(self, item):
         return self.hand_[item]

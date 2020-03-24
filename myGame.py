@@ -32,13 +32,9 @@ class Game(Engine):
         print('new player join')
         self.players_.append(player)
 
-    def dealAll7(self):
+    def dealAlln(self, n):
         for player in self.players_:
-            player.dealn(self.deck_, 2)
-        # print(self.deck_, self.centralCards_, self.players_[0])
-
-        self.takeTurn()
-        self.takeTurn()
+            player.dealn(self.deck_, n)
 
     def launch(self):
         while not self.end_:
@@ -46,7 +42,8 @@ class Game(Engine):
 
     def new(self, nPlayers):
         self.deck_.new()
-        self.deck_.shuffle()
+        print('Fresh deck:', self.deck_.ncards_)
+        #self.deck_.shuffle()
         self.centralCards_.new(self.deck_, 2)
         for _ in range(nPlayers):
             self.addPlayer(Player())
@@ -73,8 +70,10 @@ class Game(Engine):
     def askToDraw(self, player):
         player.deal1(self.deck_)
 
-    def askToPutCard(self):
-        pass
+    def askToPutCard(self, player):
+        a=input('Put a card: ')
+        self.centralCards_.add(player.hand_.takebyid(player.hand_[int(a)].uuid_))
+
 
     def checkNoPlays(self):
         for play in self.currentPlayer_.plays_.values():
@@ -128,6 +127,9 @@ class Game(Engine):
         if not replay and self.checkNoPlays():
             self.askToDraw(self.currentPlayer_)
             self.getAllPlays(replay=True)
+
+        if replay and self.checkNoPlays():
+            self.askToPutCard(self.currentPlayer_)
 
         if len(self.currentPlayer_.hand_) == 0:
             self.end_ = True

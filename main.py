@@ -5,7 +5,7 @@ import pygame.gfxdraw
 from pygame.locals import *
 from mySprite import SpriteCards, Color, Number
 from myDrawables import DrawableCard
-from myGame import Game, Player
+from myGame import Game
 
 import os, sys
 
@@ -13,7 +13,7 @@ RESOLUTION = (1000, 500)
 
 g = Game()
 g.new(1)
-g.dealAll7()
+g.dealAlln(7)
 g.launch()
 
 sys.exit(0)
