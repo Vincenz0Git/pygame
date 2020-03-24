@@ -12,8 +12,9 @@ import os, sys
 RESOLUTION = (1000, 500)
 
 g = Game()
-g.new(2)
+g.new(1)
 g.dealAll7()
+g.launch()
 
 sys.exit(0)
 

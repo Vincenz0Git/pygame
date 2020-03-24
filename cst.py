@@ -7,6 +7,8 @@ class Color(Enum):
     GREEN   = 1
     BLUE    = 2
     YELLOW  = 3
+    JOKER   = 4
+
 
 
 class Number(Enum):
@@ -23,16 +25,8 @@ class Number(Enum):
     JOKER   = 0
 
 
+
 class Bonus(Enum):
     COLOR1 = 0
     COLOR2 = 1
     NONE = 2
-
-
-l3of = [Number.ONE, Number.THREE, Number.FOUR, Number.FIVE, Number.TWO]*3
-l2of = [Number.SIX, Number.SEVEN, Number.EIGHT, Number.NINE,
-        Number.TEN, Number.JOKER]*2
-
-lnum = l3of + l2of
-
-Composition = product(Color, lnum)

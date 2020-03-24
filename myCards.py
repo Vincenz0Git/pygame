@@ -1,7 +1,7 @@
 from myMath import *
 from mySprite import Number, Color
 from random import shuffle
-from cst import Composition
+import csv
 
 
 class Card:
@@ -10,6 +10,7 @@ class Card:
         self.uuid_ = id
         self.color_ = color
         self.number_ = number
+        self.joker_ = None
 
     def value(self, joker=None):
         if not joker:
@@ -24,7 +25,12 @@ class Card:
         return self.number_ == autre.number_
 
     def __repr__(self):
-        return self.color_.name[0] + str(self.number_.value)
+        if self.joker_ == 'number':
+            return self.color_.name[0] + 'J'
+        elif self.joker_ == 'color':
+            return 'J' + str(self.number_.value)
+        else:
+            return self.color_.name[0] + str(self.number_.value)
         #return "{} {}".format(self.color_, self.number_)
 
 
@@ -54,6 +60,9 @@ class Pile:
     def takeTop(self):
         self.ncards_ -= 1
         return self.cards_.pop()
+
+    def __len__(self):
+        return self.ncards_
 
     def __repr__(self):
         if self.ncards_ <= 10:
@@ -101,7 +110,6 @@ class Deck(Pile):
         Pile.__init__(self)
         self.new()
         self.shuffle()
-        print(len(list(Composition)))
         # for i in range(7):
         #     print(self.cards_[i])
 
@@ -109,8 +117,17 @@ class Deck(Pile):
         # Create fresh deck of cards with given set of cards given by
         # the rules
         self.ncards_ = 108
-        for i, (col, num) in enumerate(Composition):
-            self.cards_.append(Card(col, num, i))
+        with open('deck.csv', 'r') as fid:
+            d = csv.reader(fid, delimiter=',')
+            next(d)
+            for i, (col, num, rep) in enumerate(d):
+                for _ in range(int(rep)):
+                    self.cards_.append(Card(Color[col], Number[num], i))
+                    if col == 'JOKER':
+                        self.cards_[-1].joker_ = 'color'
+                    elif num == 'JOKER':
+                        self.cards_[-1].joker_ = 'number'
+
 
     def shuffle(self):
         shuffle(self.cards_)
