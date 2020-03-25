@@ -1,4 +1,4 @@
-#!venv/bin/python
+#!../venv/bin/python
 import socket
 import threading
 from queue import Queue
@@ -58,18 +58,27 @@ class TCPServer(socket.socket):
                 return i
         return len(self.clients_)
 
-    def anyDisconnect(self):
-        pass
+    def disconnectedClients(self):
+        for id, client in self.clients_.items():
+            if client.state_ == State.DISCONNECTED:
+                yield id, client
     # Wait for new connections
     def newConnections(self):
 
         while self.running_:
             try:
                 sock, address = self.accept()
-                id = self.getNewId()
-                self.addClient(Client(sock, address, id, "Name", True, self.messages_), id)
-                self.clients_[id].start()
-                print("New connection at ID " + str(self.clients_[id]))
+                for id, client in self.disconnectedClients():
+                    if address[0] == client.address[0]:
+                        self.clients_[id].socket = sock
+                        self.clients_[id].state_ = State.CONNECTED
+                        print('client reconnected')
+                        break
+                else:
+                    id = self.getNewId()
+                    self.addClient(Client(sock, address, id, "Name", True, self.messages_), id)
+                    self.clients_[id].start()
+                    print("New connection at ID " + str(self.clients_[id]))
             except ConnectionAbortedError:
                 print('Closing new connection thread')
                 break
@@ -121,7 +130,7 @@ class Client(threading.Thread):
     # client aside from the client that has sent it
     # .decode is used to convert the byte data into a printable string
     def run(self):
-        while self.state_ == State.CONNECTED:
+        while not self.state_ == State.LEFT:
             try:
                 data = self.socket.recv(32)
             except OSError:
@@ -133,7 +142,8 @@ class Client(threading.Thread):
                 print("Disconnected ID "+str(self))
             else:
                 self.state_ = State.DISCONNECTED
-                print('lost connextion')
+                print('Lost connection with ', self.id, 'timeout in ..')
+                time.sleep(2)
 
 
 

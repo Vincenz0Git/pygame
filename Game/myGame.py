@@ -1,7 +1,7 @@
-from myCards import Deck, Center, Discards, Hand
-from cst import Number, Color, Bonus
-from myPlayers import Player
-from gameMechanics import Play, Engine
+from Game.myCards import Deck, Center, Discards, Hand
+from Game.cst import Number, Color, Bonus
+from Game.myPlayers import Player
+from Game.gameMechanics import Play, Engine
 
 
 def itemgetter(*items):

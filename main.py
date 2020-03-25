@@ -3,9 +3,9 @@
 import pygame
 import pygame.gfxdraw
 from pygame.locals import *
-from mySprite import SpriteCards, Color, Number
-from myDrawables import DrawableCard
-from myGame import Game
+#from mySprite import SpriteCards, Color, Number
+#from myDrawables import DrawableCard
+from Game.myGame import Game
 
 import os, sys
 

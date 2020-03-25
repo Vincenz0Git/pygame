@@ -1,5 +1,5 @@
-from myMath import *
-from mySprite import Number, Color
+from Game.myMath import *
+from Game.cst import Number, Color
 from random import shuffle
 import csv
 
@@ -116,7 +116,7 @@ class Deck(Pile):
         # Create fresh deck of cards with given set of cards given by
         # the deck.csv file
         self.ncards_ = 0
-        with open('deck.csv', 'r') as fid:
+        with open('resources/deck.csv', 'r') as fid:
             d = csv.reader(fid, delimiter=',')
             next(d)  # ignore header
             i = 0  # uuid for the card

@@ -1,4 +1,4 @@
-from cst import Bonus
+from Game.cst import Bonus
 
 
 class Engine:
