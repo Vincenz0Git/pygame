@@ -4,40 +4,70 @@ import socket
 import threading
 import sys
 
-#Wait for incoming data from server
-#.decode is used to turn the message in bytes to a string
-def receive(socket, signal):
-    while signal:
+
+class TCPClient(socket.socket):
+    def __init__(self):
+        super().__init__(socket.AF_INET, socket.SOCK_STREAM)
+        self.host_ = "127.0.0.1"
+        self.port_ = 9999
+        self.signal_ = False
+        self.receiveThread_ = threading.Thread(target=self.receive)
+        self.settimeout(5.0)
+        self.launch()
+
+    def launch(self):
         try:
-            data = socket.recv(32)
-            print(str(data.decode("utf-8")))
-        except KeyError:
-            print("You have been disconnected from the server")
-            signal = False
+            self.connect((self.host_, self.port_))
+            self.signal_ = True
+            self.receiveThread_.start()
+        except ConnectionRefusedError:
+            print("Could not make a connection to the server")
+            input("Press enter to quit")
+            sys.exit(0)
+
+    def receive(self):
+        while self.signal_:
+            try:
+                data = self.recv(32)
+                if data == b'':
+                    print('lost connection to server')
+                    break
+                print(data.decode())
+            except socket.timeout:
+                continue
+
+    def send(self):
+        while self.signal_:
+            message = input()
+            self.sendall(str.encode(message))
+            if message == "end":
+                self.signal_ = False
+                self.receiveThread_.join()
+                #self.close()
+        print('ending...')
+        super().close()
+
+
+def test():
+    import socket
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect(("127.0.0.1", 9999))
+
+    while True:
+        try:
+            s.sendall(input().encode())
+        except KeyboardInterrupt:
+            s.close()
             break
 
-#Get host and port
-host = "127.0.0.1"
-port = 9999
+if __name__ == '__main__':
+    a = TCPClient()
+    a.send()
 
-#Attempt connection to server
-try:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((host, port))
-except:
-    print("Could not make a connection to the server")
-    input("Press enter to quit")
-    sys.exit(0)
 
-#Create new thread to wait for data
-receiveThread = threading.Thread(target = receive, args = (sock, True))
-receiveThread.start()
+
+
 
 #Send data to server
 #str.encode is used to turn the string message into bytes so it can be sent across the network
-while True:
-    message = input()
-    if message == "end":
-        receiveThread.join(2)
-        break
-    sock.sendall(str.encode(message))
