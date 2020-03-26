@@ -28,7 +28,7 @@ class TCPClient(socket.socket):
     def receive(self):
         while self.signal_:
             try:
-                data = self.recv(32)
+                data = self.recv(2048)
                 if data == b'':
                     print('lost connection to server')
                     break
