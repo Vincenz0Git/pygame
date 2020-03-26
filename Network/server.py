@@ -16,6 +16,12 @@ class State(Enum):
     DISCONNECTED = 2
 
 
+class LOG(Enum):
+    INFO = 0
+    WARNING = 1
+    ERROR = 2
+
+
 class TCPServer(socket.socket):
     def __init__(self):
         super().__init__(socket.AF_INET, socket.SOCK_STREAM)
@@ -24,125 +30,146 @@ class TCPServer(socket.socket):
         self.host_ = "127.0.0.1"
         self.port_ = 9999
         self.messages_ = Queue()
-        self.launch()
 
-    def launch(self):
+    def log(self, type, msg):
+        print(type.name + ': ' + msg)
+
+
+    def startServer(self):
         self.bind((self.host_, self.port_))
         self.listen(5)
         self.newConnectionsThread = threading.Thread(target=self.newConnections)
         self.newConnectionsThread.start()
         self.newMessageThread = threading.Thread(target=self.newMessage)
         self.newMessageThread.start()
+        self.log(LOG.INFO, 'Server started')
+
+
+    def mainLoop(self):
+        # Blocking process, wait for user input
         while True:
             cmd = input()
             if cmd == 'quit':
-                self.running_ = False
-                self.close()
-                self.messages_.put((-1, ""))
-                self.newMessageThread.join()
-                self.newConnectionsThread.join()
-                for i, c in self.clients_.items():
-                    c.state_ = State.LEFT
-                    c.socket.close()
-                    c.join()
+                self.kill()
                 break
 
+    def addClient(self, client, uid):
+        self.clients_[uid] = client
 
-
-    def addClient(self, client, id):
-        self.clients_[id] = client
-
-    def getNewId(self):
+    def getNewuid(self):
         for i in range(len(self.clients_)):
             if not self.clients_.get(i) == i:
                 return i
         return len(self.clients_)
 
     def disconnectedClients(self):
-        for id, client in self.clients_.items():
+        for uid, client in self.clients_.items():
             if client.state_ == State.DISCONNECTED:
-                yield id, client
+                yield uid, client
     # Wait for new connections
     def newConnections(self):
 
         while self.running_:
             try:
                 sock, address = self.accept()
-                for id, client in self.disconnectedClients():
+                for uid, client in self.disconnectedClients():
                     if address[0] == client.address[0]:
-                        self.clients_[id].socket = sock
-                        self.clients_[id].state_ = State.CONNECTED
+                        self.clients_[uid].socket = sock
+                        self.clients_[uid].state_ = State.CONNECTED
                         print('client reconnected')
                         break
                 else:
-                    id = self.getNewId()
-                    self.addClient(Client(sock, address, id, "Name", True, self.messages_), id)
-                    self.clients_[id].start()
-                    print("New connection at ID " + str(self.clients_[id]))
+                    uid = self.getNewuid()
+                    self.addClient(Client(sock, address, uid, "Name", True, self.messages_), uid)
+                    self.clients_[uid].start()
+                    self.log(LOG.INFO, "New connection at uid " + str(self.clients_[uid]))
             except ConnectionAbortedError:
-                print('Closing new connection thread')
+                self.log(LOG.INFO, 'Closing new connection thread')
                 break
-
 
     def newMessage(self):
         while self.running_:
-            id, msg = self.messages_.get()
-            if id == -1:
-                print("Closing new Messages thread")
-                break
-            if msg == b'end':
-                self.clients_[id].state_ = State.LEFT
-                self.clients_[id].join()
-                self.removeClient(id)
-            else:
-                print(id, msg)
+            uid, msg = self.messages_.get()
+            self.handleNewMessage(msg, uid)
 
-    def removeClient(self, id):
-        self.clients_.pop(id)
+    def handleNewMessage(self, msg, uid):
+        if uid == -1:
+            self.running_ = False
+            self.log(LOG.INFO, "Closing new Messages thread")
+        if msg == b'quit':
+            self.clients_[uid].state_ = State.LEFT
+            self.clients_[uid].join()
+            self.removeClient(uid)
+        else:
+            self.log(LOG.INFO, str(uid)+' '+str(msg))
+            self.sendToAll(msg)
+
+    def sendToUid(self, msg, uid):
+        self.clients_[uid].sendMessage(msg)
+
+    def sendToAll(self, msg):
+        for cl in self.clients_.values():
+            cl.sendMessage(msg)
+
+    def removeClient(self, uid):
+        self.clients_.pop(uid)
 
     def kill(self):
         self.running_ = False
+        self.close()
+        self.messages_.put((-1, "quit"))
+        self.newMessageThread.join()
+        self.newConnectionsThread.join()
+        for i, c in self.clients_.items():
+            c.state_ = State.LEFT
+            c.socket.close()
+            c.join()
 
 
 class Client(threading.Thread):
     # Client class, new instance created for each connected client
     # Each instance has the socket and address that is associated with items
-    # Along with an assigned ID and a name chosen by the client
-    def __init__(self, socket, address, id, name, signal, queue):
+    # Along with an assigned uid and a name chosen by the client
+    def __init__(self, socket, address, uid, name, signal, queue):
         threading.Thread.__init__(self)
         self.socket = socket
         self.address = address
-        self.id = id
+        self.uid = uid
         self.name = name
         self.queue_ = queue
         self.state_ = State.CONNECTED
 
     def __str__(self):
-        return str(self.id) + " " + str(self.address)
+        return str(self.uid) + " " + str(self.address)
 
+    def log(self, type, msg):
+        print(type.name + ': ' + msg)
 
     def reconnect(self):
         pass
 
+    def sendMessage(self, msg):
+        self.socket.sendall(msg)
+
     # Attempt to get data from client
     # If unable to, assume client has disconnected and remove him from server data
     # If able to and we get data back, print it in the server and send it back to every
-    # client aside from the client that has sent it
+    # client asuide from the client that has sent it
     # .decode is used to convert the byte data into a printable string
     def run(self):
         while not self.state_ == State.LEFT:
             try:
                 data = self.socket.recv(32)
             except OSError:
-                print('Server down, ending client', self.id)
+                self.log(LOG.ERROR, 'Server down, ending client' + str(self.uid))
                 break
             if data != b'':
-                self.queue_.put((self.id, data))
+                self.queue_.put((self.uid, data))
             elif self.state_ == State.LEFT:
-                print("Disconnected ID "+str(self))
+                self.log(LOG.INFO, "Disconnected uid "+str(self))
             else:
                 self.state_ = State.DISCONNECTED
-                print('Lost connection with ', self.id, 'timeout in ..')
+                self.log(LOG.INFO, 'Lost connection with '+str(self.uid)+'timeout in ..')
                 time.sleep(2)
 
 
@@ -169,3 +196,5 @@ def test():
 
 if __name__ == '__main__':
     s = TCPServer()
+    s.startServer()
+    s.mainLoop()

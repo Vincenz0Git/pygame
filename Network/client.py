@@ -40,8 +40,9 @@ class TCPClient(socket.socket):
         while self.signal_:
             message = input()
             self.sendall(str.encode(message))
-            if message == "end":
+            if message == "quit":
                 self.signal_ = False
+                #self.close()
                 self.receiveThread_.join()
                 #self.close()
         print('ending...')
