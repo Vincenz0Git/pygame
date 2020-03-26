@@ -96,13 +96,14 @@ class TCPServer(socket.socket):
         if uid == -1:
             self.running_ = False
             self.log(LOG.INFO, "Closing new Messages thread")
-        if msg == b'quit':
-            self.clients_[uid].state_ = State.LEFT
-            self.clients_[uid].join()
-            self.removeClient(uid)
         else:
-            self.log(LOG.INFO, str(uid)+' '+str(msg))
-            self.sendToAll(msg)
+            if msg == b'quit':
+                self.clients_[uid].state_ = State.LEFT
+                self.clients_[uid].join()
+                self.removeClient(uid)
+            else:
+                self.log(LOG.INFO, str(uid)+' '+str(msg))
+                self.sendToAll(msg)
 
     def sendToUid(self, msg, uid):
         self.clients_[uid].sendMessage(msg)
@@ -117,7 +118,7 @@ class TCPServer(socket.socket):
     def kill(self):
         self.running_ = False
         self.close()
-        self.messages_.put((-1, "quit"))
+        self.messages_.put((-1, b"quit"))
         self.newMessageThread.join()
         self.newConnectionsThread.join()
         for i, c in self.clients_.items():
@@ -161,7 +162,7 @@ class Client(threading.Thread):
             try:
                 data = self.socket.recv(32)
             except OSError:
-                self.log(LOG.ERROR, 'Server down, ending client' + str(self.uid))
+                self.log(LOG.INFO, 'Server down, ending client' + str(self.uid))
                 break
             if data != b'':
                 self.queue_.put((self.uid, data))

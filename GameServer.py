@@ -11,15 +11,18 @@ class GameServer(TCPServer, Game):
 
     def handleNewMessage(self, msg, uid):
         if uid == -1:
+            # Server commands
             self.running_ = False
             self.log(LOG.INFO, "Closing new Messages thread")
-        if msg == b'quit':
-            self.clients_[uid].state_ = State.LEFT
-            self.clients_[uid].join()
-            self.removeClient(uid)
         else:
-            self.log(LOG.INFO, str(uid)+' '+str(msg))
-            self.sendToAll(msg)
+            # Client commands
+            if msg == b'quit':
+                self.clients_[uid].state_ = State.LEFT
+                self.clients_[uid].join()
+                self.removeClient(uid)
+            else:
+                self.log(LOG.INFO, str(uid)+' '+str(msg))
+                self.sendToAll(msg)
 
 
 if __name__ == '__main__':
