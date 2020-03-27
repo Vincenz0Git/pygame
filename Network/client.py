@@ -12,6 +12,7 @@ class TCPClient(socket.socket):
         self.port_ = 9999
         self.signal_ = False
         self.receiveThread_ = threading.Thread(target=self.receive)
+        self.ready_ = False
         self.settimeout(5.0)
         self.launch()
 
@@ -40,7 +41,7 @@ class TCPClient(socket.socket):
         while self.signal_:
             message = input()
             self.sendall(str.encode(message))
-            if message == "quit":
+            if message == "/quit":
                 self.signal_ = False
                 #self.close()
                 self.receiveThread_.join()

@@ -139,6 +139,7 @@ class Client(threading.Thread):
         self.name = name
         self.queue_ = queue
         self.state_ = State.CONNECTED
+        self.ready_ = False
 
     def __str__(self):
         return str(self.uid) + " " + str(self.address)
