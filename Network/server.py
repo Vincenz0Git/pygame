@@ -49,12 +49,18 @@ class TCPServer(socket.socket):
         # Blocking process, wait for user input
         while True:
             cmd = input()
-            if cmd == 'quit':
+            if cmd == '/quit':
                 self.kill()
                 break
 
     def addClient(self, client, uid):
         self.clients_[uid] = client
+
+    def getClientuid(self, client):
+        for uid, cl in self.clients_.items():
+            if client.uid == uid:
+                return uid
+        return None
 
     def getNewuid(self):
         for i in range(len(self.clients_)):
@@ -100,7 +106,7 @@ class TCPServer(socket.socket):
             if msg == b'quit':
                 self.clients_[uid].state_ = State.LEFT
                 self.clients_[uid].join()
-                self.removeClient(uid)
+                self.removeClient(self.clients_[uid])
             else:
                 self.log(LOG.INFO, str(uid)+' '+str(msg))
                 self.sendToAll(msg)
@@ -112,13 +118,14 @@ class TCPServer(socket.socket):
         for cl in self.clients_.values():
             cl.sendMessage(msg)
 
-    def removeClient(self, uid):
-        self.clients_.pop(uid)
+    def removeClient(self, client):
+        #uid = self.getClientuid(client)
+        self.clients_.pop(client.uid)
 
     def kill(self):
         self.running_ = False
         self.close()
-        self.messages_.put((-1, b"quit"))
+        self.messages_.put((-1, b"/quit"))
         self.newMessageThread.join()
         self.newConnectionsThread.join()
         for i, c in self.clients_.items():
