@@ -16,10 +16,35 @@ class GameServer(TCPServer, Game):
         Game.__init__(self)
         self.rooms_ = {1:set(), 2:set()}
         self.commandsClient_ = {}
+        self.commandsServer_ = {}
         self.initCmdsClient()
+        self.initCmdsServer()
+
+    def initCmdsServer(self):
+        # List of server console commands
+        def quit(*args):
+            # Dont really know what happens here loul, but it works
+            #self.kill()
+            #self.running_ = False
+            #super(TCPServer, self).close()
+            #self.messages_.put((-1, 'a'.encode))
+            self.running_ = False
+            self.log(LOG.INFO, "Quitting...")
+            #self.log(LOG.INFO, "Closing new Messages thread")
+
+        def cheackready(*args):
+            allReady = True
+            for cl in self.clients_.values():
+                if not cl.ready_:
+                    allReady = False
+            if allReady:
+                self.sendToAll('Everyone ready!'.encode())
+
+        self.commandsServer_['/quit'] = quit
+        self.commandsServer_['/checkready'] = cheackready
 
     def initCmdsClient(self):
-
+        # List of client console commands
         def quit(sender, *args):
             sender.state_ = State.LEFT
             sender.join()
@@ -84,17 +109,10 @@ class GameServer(TCPServer, Game):
         if uid == -1:
             # Server commands
             # TODO dict commands list
-            if '/quit' in cmd[0]:
-                self.running_ = False
-                self.log(LOG.INFO, "Closing new Messages thread")
-
-            if '/checkready' in cmd[0]:
-                allReady = True
-                for cl in self.clients_.values():
-                    if not cl.ready_:
-                        allReady = False
-                if allReady:
-                    self.sendToAll('Everyone ready!'.encode())
+            try:
+                self.commandsServer_[cmd[0]]()
+            except KeyError:
+                self.log(LOG.ERROR, 'Unknown server command')
         else:
             sender = self.clients_[uid]
             try:

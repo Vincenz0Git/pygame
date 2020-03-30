@@ -49,9 +49,15 @@ class TCPServer(socket.socket):
         # Blocking process, wait for user input
         while True:
             cmd = input()
-            if cmd == '/quit':
+            self.messages_.put((-1, cmd.encode()))
+            if '/quit' in cmd:
                 self.kill()
                 break
+            #     self.kill()
+            #     break
+            #if cmd == '/quit':
+            #    self.kill()
+            #    break
 
     def addClient(self, client, uid):
         self.clients_[uid] = client
@@ -90,18 +96,22 @@ class TCPServer(socket.socket):
                     self.clients_[uid].start()
                     self.log(LOG.INFO, "New connection at uid " + str(self.clients_[uid]))
             except ConnectionAbortedError:
-                self.log(LOG.INFO, 'Closing new connection thread')
                 break
+
+        self.log(LOG.INFO, 'Closing new connection thread a')
 
     def newMessage(self):
         while self.running_:
             uid, msg = self.messages_.get()
             self.handleNewMessage(msg, uid)
+            self.messages_.task_done()
+
+        self.log(LOG.INFO, "Closing new Messages thread")
 
     def handleNewMessage(self, msg, uid):
         if uid == -1:
             self.running_ = False
-            self.log(LOG.INFO, "Closing new Messages thread")
+            #self.log(LOG.INFO, "Closing new Messages thread")
         else:
             if msg == b'quit':
                 self.clients_[uid].state_ = State.LEFT
@@ -123,9 +133,8 @@ class TCPServer(socket.socket):
         self.clients_.pop(client.uid)
 
     def kill(self):
-        self.running_ = False
+        self.messages_.join()
         self.close()
-        self.messages_.put((-1, b"/quit"))
         self.newMessageThread.join()
         self.newConnectionsThread.join()
         for i, c in self.clients_.items():
