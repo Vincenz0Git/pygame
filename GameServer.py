@@ -24,21 +24,23 @@ class GameServer(TCPServer, Game):
         # List of server console commands
         def quit(*args):
             # Dont really know what happens here loul, but it works
-            #self.kill()
-            #self.running_ = False
-            #super(TCPServer, self).close()
-            #self.messages_.put((-1, 'a'.encode))
             self.running_ = False
             self.log(LOG.INFO, "Quitting...")
-            #self.log(LOG.INFO, "Closing new Messages thread")
 
         def cheackready(*args):
-            allReady = True
-            for cl in self.clients_.values():
-                if not cl.ready_:
-                    allReady = False
-            if allReady:
-                self.sendToAll('Everyone ready!'.encode())
+            state = {}
+            for i, room in self.rooms_.items():
+                if len(room) == 0:
+                    state[i] = False
+                    continue
+                for uid in room:
+                    if not self.clients_[uid].ready_:
+                        state[i] = False
+                        break
+                else:
+                    state[i] = True
+
+            print(state)
 
         self.commandsServer_['/quit'] = quit
         self.commandsServer_['/checkready'] = cheackready
@@ -56,7 +58,9 @@ class GameServer(TCPServer, Game):
         def join(sender, *args):
             roomid = args[0][0]
             currentRoom = self.getRoomOfuid(sender.uid)
-            if not len(args[0]) == 1 or not roomid.isdigit() or int(roomid) not in self.rooms_.keys():
+            if not len(args[0]) == 1 or \
+               not roomid.isdigit() or \
+               int(roomid) not in self.rooms_.keys():
                 raise CommandException('/join [room id]')
             elif not currentRoom == int(roomid):
                 if currentRoom:
@@ -79,8 +83,7 @@ class GameServer(TCPServer, Game):
                 sender.ready_ = not sender.ready_
                 rep = 'You are' + ('' if sender.ready_ else ' not') + ' ready!'
                 sender.sendMessage(rep.encode())
-                if sender.ready_:
-                    self.messages_.put((-1, b"/checkready"))
+                self.messages_.put((-1, b"/checkready"))
             else:
                 sender.sendMessage('You are not in a room'.encode())
 
@@ -114,6 +117,7 @@ class GameServer(TCPServer, Game):
             except KeyError:
                 self.log(LOG.ERROR, 'Unknown server command')
         else:
+            # Client commands
             sender = self.clients_[uid]
             try:
                 self.commandsClient_[cmd[0]](sender, cmd[1:])
