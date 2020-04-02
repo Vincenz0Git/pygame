@@ -1,4 +1,5 @@
 from Game.myCards import Hand
+from Game.cst import Bonus
 from Game.gameMechanics import Play
 
 class Player:
@@ -29,6 +30,23 @@ class Player:
         if not self.plays_ or not alreadyOnBoard:
             self.plays_.append(Play([cardFromHand], cardInBoard))
             self.lastPlay_ = (cardFromHand, cardInBoard)
+
+    def allPlaysRight(self):
+        allRight = True
+        for play in self.plays_:
+            if not play.isRight():
+                allRight = False
+                break
+        return allRight
+
+    def getBonus(self):
+        for play in self.plays_:
+            if len(play) == 1:
+                if play[0].color_ == play.inBoard_.color_:
+                    self.bonus_.append(Bonus.COLOR1)
+            if len(play) == 2:
+                if play[0].color_ == play[1].color_ == play.inBoard_.color_:
+                    self.bonus_.append(Bonus.COLOR2)
 
     def getLastPlay(self):
         for play in self.plays_:

@@ -4,7 +4,7 @@ from Game.myPlayers import Player
 from Game.gameMechanics import Play, Engine
 from threading import Thread
 
-
+# probably a better way
 def itemgetter(*items):
     if len(items) == 1:
         item = items[0]
@@ -32,7 +32,6 @@ class Game(Engine, Thread):
         self.uid_ = uid
         self.replay_ = False
 
-
     def addPlayer(self, player):
         print('new player join')
         self.players_.append(player)
@@ -58,20 +57,6 @@ class Game(Engine, Thread):
         self.nPlayers_ = nPlayers
         print(self.deck_, self.centralCards_, self.players_[0])
 
-    def askJoker(self, card):
-        if card.joker_ == 'number':
-            self.askNumber(card)
-        elif card.joker_ == 'color':
-            self.askColor(card)
-
-    def askColor(self, card):
-        col = input(str(card) + " color? ")
-        card.color_ = Color[col]
-
-    def askNumber(self, card):
-        num = input(str(card) + " number? ")
-        card.number_ = Number[num]
-
     def askToDraw(self, player):
         player.deal1(self.deck_)
 
@@ -86,6 +71,7 @@ class Game(Engine, Thread):
         return True
 
     def endTurn(self):
+        self.currentPlayer_.getBonus()
         for play in self.currentPlayer_.plays_:
             for card in play:
                 # remove the cards from hand
@@ -95,15 +81,30 @@ class Game(Engine, Thread):
                     # from the deck
                     self.discardPile_.add(self.centralCards_.takebyid(play.inBoard_.uuid_))
                     self.centralCards_.add(self.deck_.takeTop())
+
         self.currentPlayer_.plays_ = []
+        for bonus in self.currentPlayer_.bonus_:
+            if bonus == Bonus.COLOR1:
+                self.askToPutCard(self.currentPlayer_)
+            elif bonus == Bonus.COLOR2:
+                self.askToPutCard(self.currentPlayer_)
+                for player in self.players_:
+                    if not player == self.currentPlayer_:
+                        self.askToDraw(player)
 
     def askJoker(self, card):
-        if card.joker_ == 'color' and card.color_ == Color.JOKER:
-            val = self.askInput(str(card) + ' ' + card.joker_ + ':')
-            card.color_ = Color[val]
-        elif card.joker_ == 'number' and card.number_ == Number.JOKER:
-            val = self.askInput(str(card) + ' ' + card.joker_ + ':')
-            card.number_ = Number[val]
+        while True:
+            try:
+                if card.joker_ == 'color' and card.color_ == Color.JOKER:
+                    val = self.askInput(str(card) + ' ' + card.joker_ + ':')
+                    card.color_ = Color[val]
+                elif card.joker_ == 'number' and card.number_ == Number.JOKER:
+                    val = self.askInput(str(card) + ' ' + card.joker_ + ':')
+                    card.number_ = Number(int(val))
+            except:
+                    pass
+            else:
+                break
 
 
     def getInput(self):
@@ -119,32 +120,39 @@ class Game(Engine, Thread):
         # to be overwritten
         return input(msg)
 
+    def takeBack(self):
+        fromHand, inBoard = self.currentPlayer_.getLastPlay()
+        if fromHand.joker_ == 'color':
+            fromHand.color_ = Color.JOKER
+        if fromHand.joker_ == 'number':
+            fromHand.number_ = Number.JOKER
+        if inBoard.joker_ == 'color':
+            inBoard.color_ = Color.JOKER
+        if inBoard.joker_ == 'number':
+            inBoard.number_ = Number.JOKER
+        self.currentPlayer_.hand_.add(fromHand)
+
     def getAllPlays(self):
         self.sendOutput(str(self.centralCards_) + "\n" + str(self.currentPlayer_))
-        playInput = self.getInput()
+        playInput = self.askInput('play: ')
         endTurn = False
         while not endTurn:
             if (playInput == 'draw' and not self.replay_):
                 self.askToDraw(self.currentPlayer_)
                 self.replay_ = True
-            elif playInput == 'done' and (not self.checkNoPlays() or self.replay_):
+            elif playInput == 'done':
                 if self.replay_ and self.checkNoPlays():
+                    print('mama')
                     self.askToPutCard(self.currentPlayer_)
-                print('ending turn')
-                endTurn = True
-                break
+                elif self.currentPlayer_.allPlaysRight():
+                    print('ending turn')
+                    endTurn = True
+                    break
+                else:
+                    print('some plays are still wrong')
             elif playInput == 'takeback':
                 try:
-                    fromHand, inBoard = self.currentPlayer_.getLastPlay()
-                    if fromHand.joker_ == 'color':
-                        fromHand.color_ = Color.JOKER
-                    if fromHand.joker_ == 'number':
-                        fromHand.number_ = Number.JOKER
-                    if inBoard.joker_ == 'color':
-                        inBoard.color_ = Color.JOKER
-                    if inBoard.joker_ == 'number':
-                        inBoard.number_ = Number.JOKER
-                    self.currentPlayer_.hand_.add(fromHand)
+                    self.takeBack()
                 except:
                     print('error taking back')
             else:
@@ -161,60 +169,11 @@ class Game(Engine, Thread):
                      inBoard
                     )
                 except:
-                    print('wrong play')
+                    print('wrong play: valid are => [idHand]:[idCenter], draw, done')
                     pass
             print('\n\n')
             self.sendOutput(str(self.centralCards_) + "\n" + str(self.currentPlayer_))
-            playInput = self.getInput()
-
-        self.endTurn()
-
-    def getPlayForCard(self, card):
-        # Simulation of network/GUI
-        a = input('Play for {}: '.format(card)).split()
-        if 'quit' in a:
-            self.end_ = True
-            return None
-        if len(a) == 0:
-            h = []
-        else:
-            h = [int(el) for el in a]
-
-        toPlayFromHand = itemgetter(*h)(self.currentPlayer_.hand_)
-
-        self.askJoker(card)
-        for c in toPlayFromHand:
-            self.askJoker(c)
-
-        return Play(toPlayFromHand, card)
-
-    def getaaAllPlays(self, replay=False):
-        if replay:
-            print('replay..')
-        for i, card in enumerate(self.centralCards_):
-            # input simulate what the gui/network will provide
-            play = Play()
-            try:
-                while not self.checkPlay(play):
-                    play = self.getPlayForCard(card)
-            except AttributeError:
-                break
-
-            self.currentPlayer_.setPlay(str(i), play)
-            self.currentPlayer_.bonus_.append(self.checkBonus(play))
-
-            print(self.checkBonus(play))
-
-        if not replay and self.checkNoPlays():
-            self.askToDraw(self.currentPlayer_)
-            self.getAllPlays(replay=True)
-
-        if replay and self.checkNoPlays():
-            self.askToPutCard(self.currentPlayer_)
-
-        if len(self.currentPlayer_.hand_) == 0:
-            self.end_ = True
-            print('Player WIN!!!!')
+            playInput = self.askInput('play: ')
 
     def initTurn(self):
         self.currentPlayer_ = self.players_[self.turn_ % self.nPlayers_]
@@ -224,20 +183,11 @@ class Game(Engine, Thread):
 
     def takeTurn(self):
         print('Turn: ', self.turn_)
-        #print(self.centralCards_)
-
         self.initTurn()
-
-        #print(self.currentPlayer_)
-
         self.getAllPlays()
 
         # When the plays are set and validated
         self.endTurn()
-
         print('End turn')
-
-        #print(self.currentPlayer_, self.discardPile_)
-
         print('=======================================================')
         self.turn_ += 1

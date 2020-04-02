@@ -48,6 +48,7 @@ class GameServer(TCPServer):
         def startgame(*args):
             room = args[0][0]
             self.gameThreads[room] = Game(room)
+            self.gameThreads[room].new(len(self.rooms_[room]))
             self.gameThreads_.start()
 
         self.commandsServer_['/quit'] = quit
