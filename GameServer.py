@@ -10,15 +10,16 @@ class CommandException(BaseException):
         self.msg_ = msg
 
 
-class GameServer(TCPServer, Game):
+class GameServer(TCPServer):
     def __init__(self):
-        TCPServer.__init__(self)
-        Game.__init__(self)
-        self.rooms_ = {1:set(), 2:set()}
+        super().__init__()
+
+        self.rooms_ = {1:set(), 2:set()}  # id:set of uid of players
         self.commandsClient_ = {}
         self.commandsServer_ = {}
         self.initCmdsClient()
         self.initCmdsServer()
+        self.gameThreads_ = {}
 
     def initCmdsServer(self):
         # List of server console commands
@@ -39,11 +40,22 @@ class GameServer(TCPServer, Game):
                         break
                 else:
                     state[i] = True
+                    startmsg = "/startgame "+str(i)
+                    self.messages_.put((-1,startmsg.encode()))
 
             print(state)
 
+        def startgame(*args):
+            room = args[0][0]
+            self.gameThreads[room] = Game(room)
+            self.gameThreads_.start()
+
         self.commandsServer_['/quit'] = quit
         self.commandsServer_['/checkready'] = cheackready
+        self.commandsServer_['/startgame'] = startgame
+
+
+
 
     def initCmdsClient(self):
         # List of client console commands
@@ -113,7 +125,7 @@ class GameServer(TCPServer, Game):
             # Server commands
             # TODO dict commands list
             try:
-                self.commandsServer_[cmd[0]]()
+                self.commandsServer_[cmd[0]](cmd[1:])
             except KeyError:
                 self.log(LOG.ERROR, 'Unknown server command')
         else:

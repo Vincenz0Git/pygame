@@ -2,6 +2,7 @@ from Game.myCards import Deck, Center, Discards, Hand
 from Game.cst import Number, Color, Bonus
 from Game.myPlayers import Player
 from Game.gameMechanics import Play, Engine
+from threading import Thread
 
 
 def itemgetter(*items):
@@ -16,9 +17,10 @@ def itemgetter(*items):
     return g
 
 
-class Game(Engine):
-    def __init__(self):
+class Game(Engine, Thread):
+    def __init__(self, uid):
         Engine.__init__(self)
+        Thread.__init__(self)
         self.deck_ = Deck()
         self.centralCards_ = Center()
         self.discardPile_ = Discards()
@@ -27,6 +29,9 @@ class Game(Engine):
         self.nPlayers_ = 0
         self.currentPlayer_ = None
         self.end_ = False
+        self.uid_ = uid
+        self.replay_ = False
+
 
     def addPlayer(self, player):
         print('new player join')
@@ -36,7 +41,7 @@ class Game(Engine):
         for player in self.players_:
             player.dealn(self.deck_, n)
 
-    def launch(self):
+    def run(self):
         while not self.end_:
             self.takeTurn()
 
@@ -71,31 +76,80 @@ class Game(Engine):
         player.deal1(self.deck_)
 
     def askToPutCard(self, player):
-        a=input('Put a card: ')
+        a=getInput('Put a card: ')
         self.centralCards_.add(player.hand_.takebyid(player.hand_[int(a)].uuid_))
 
 
     def checkNoPlays(self):
-        for play in self.currentPlayer_.plays_.values():
+        for play in self.currentPlayer_.plays_:
             if not play.noPlay():
                 return False
         return True
 
     def endTurn(self):
-        for play in self.currentPlayer_.plays_.values():
-            for card in play.inHand_:
+        for play in self.currentPlayer_.plays_:
+            for card in play:
                 # remove the cards from hand
-                self.discardPile_.add(self.currentPlayer_.takeCardbyid(card.uuid_))
-            if len(play.inHand_) > 0:
-                # remove the cards from the pile and replace them by new ones
-                # from the deck
-                print(play.inBoard_.uuid_)
-                self.discardPile_.add(self.centralCards_.takebyid(play.inBoard_.uuid_))
-                self.centralCards_.add(self.deck_.takeTop())
+                self.discardPile_.add(card)
+                if len(play) > 0:
+                    # remove the cards from the pile and replace them by new ones
+                    # from the deck
+                    self.discardPile_.add(self.centralCards_.takebyid(play.inBoard_.uuid_))
+                    self.centralCards_.add(self.deck_.takeTop())
+        self.currentPlayer_.plays_ = []
+
+    def getInput(self):
+        # to be overwritten, must return a str object
+
+        return input('Play: ')
+
+    def sendOutput(self, msg):
+        # to be overwritten
+        print(msg)
+
+    def askInput(self, msg):
+        # to be overwritten
+        return input(msg)
+
+    def getAllPlays(self):
+        self.sendOutput(str(self.centralCards_) + "\n" + str(self.currentPlayer_))
+        playInput = self.getInput()
+        endTurn = False
+        while not endTurn:
+            if (playInput == 'draw' and not self.replay_):
+                self.askToDraw(self.currentPlayer_)
+                self.replay_ = True
+            elif playInput == 'done' and (not self.checkNoPlays() or self.replay_):
+                print('ending turn')
+                endTurn = True
+                break
+            elif playInput == 'takeback':
+                try:
+                    fromHand, inBoard = self.currentPlayer_.getLastPlay()
+                    self.currentPlayer_.hand_.add(fromHand)
+                except:
+                    print('error taking back')
+            else:
+                try:
+                    p = playInput.split(':')
+                    self.currentPlayer_.addPlay(
+                     self.currentPlayer_.takeCardbyid(int(p[0])),
+                     self.centralCards_.getbyid(int(p[1]))[1]
+                    )
+                except:
+                    print('wrong play')
+                    pass
+            self.sendOutput(str(self.centralCards_) + "\n" + str(self.currentPlayer_))
+            playInput = self.getInput()
+
+        self.endTurn()
 
     def getPlayForCard(self, card):
         # Simulation of network/GUI
         a = input('Play for {}: '.format(card)).split()
+        if 'quit' in a:
+            self.end_ = True
+            return None
         if len(a) == 0:
             h = []
         else:
@@ -109,15 +163,17 @@ class Game(Engine):
 
         return Play(toPlayFromHand, card)
 
-    def getAllPlays(self, replay=False):
+    def getaaAllPlays(self, replay=False):
         if replay:
             print('replay..')
         for i, card in enumerate(self.centralCards_):
             # input simulate what the gui/network will provide
             play = Play()
-            while not self.checkPlay(play):
-
-                play = self.getPlayForCard(card)
+            try:
+                while not self.checkPlay(play):
+                    play = self.getPlayForCard(card)
+            except AttributeError:
+                break
 
             self.currentPlayer_.setPlay(str(i), play)
             self.currentPlayer_.bonus_.append(self.checkBonus(play))
@@ -137,23 +193,24 @@ class Game(Engine):
 
     def initTurn(self):
         self.currentPlayer_ = self.players_[self.turn_ % self.nPlayers_]
+        self.replay_ = False
 
     def takeTurn(self):
         print('Turn: ', self.turn_)
-        print('Board state: ', self.centralCards_)
+        #print(self.centralCards_)
 
         self.initTurn()
 
-        print('Player hand: ', self.currentPlayer_)
+        #print(self.currentPlayer_)
 
-        self.getAllPlays(replay=False)
+        self.getAllPlays()
 
         # When the plays are set and validated
         self.endTurn()
 
         print('End turn')
 
-        print(self.currentPlayer_, self.discardPile_)
+        #print(self.currentPlayer_, self.discardPile_)
 
         print('=======================================================')
         self.turn_ += 1

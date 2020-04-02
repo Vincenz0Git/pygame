@@ -18,6 +18,9 @@ class Card:
         else:
             return joker
 
+    def repruid(self):
+        return '(' + str(self.uuid_) + ')'
+
     def color(self):
         return self.color_.name
 
@@ -26,11 +29,11 @@ class Card:
 
     def __repr__(self):
         if self.joker_ == 'number':
-            return self.color_.name[0] + 'J'
+            return self.color_.name[0] + 'J' + self.repruid()
         elif self.joker_ == 'color':
-            return 'J' + str(self.number_.value)
+            return 'J' + str(self.number_.value) + self.repruid()
         else:
-            return self.color_.name[0] + str(self.number_.value)
+            return self.color_.name[0] + str(self.number_.value) + self.repruid()
         #return "{} {}".format(self.color_, self.number_)
 
 
@@ -80,6 +83,9 @@ class Hand(Pile):
     def __init__(self):
         Pile.__init__(self)
 
+    def __repr__(self):
+        return '{:10}'.format('Hand:') + Pile.__repr__(self)
+
 
 class Center(Pile):
     # Set of cards common to all players, min of 2 at each time
@@ -92,7 +98,7 @@ class Center(Pile):
             self.add(deck.takeTop())
 
     def __repr__(self):
-        return "(Center "+Pile.__repr__(self)+")"
+        return '{:10}'.format("Center:")+Pile.__repr__(self)
 
 
 class Discards(Pile):
@@ -102,7 +108,7 @@ class Discards(Pile):
         Pile.__init__(self)
 
     def __repr__(self):
-        return "(Discards "+Pile.__repr__(self)+")"
+        return '{:10}'.format("Discards:")+Pile.__repr__(self)
 
 
 class Deck(Pile):
@@ -134,4 +140,4 @@ class Deck(Pile):
         shuffle(self.cards_)
 
     def __repr__(self):
-        return "(Deck "+Pile.__repr__(self)+")"
+        return '{:10}'.format("Deck:")+Pile.__repr__(self)

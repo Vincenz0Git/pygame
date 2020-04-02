@@ -1,10 +1,12 @@
 from Game.myCards import Hand
+from Game.gameMechanics import Play
 
 class Player:
     def __init__(self):
         self.hand_ = Hand()
-        self.plays_ = {}
+        self.plays_ = []
         self.bonus_ = []
+        self.lastPlay_ = ()
 
     def deal1(self, deck):
         self.hand_.add(deck.takeTop())
@@ -17,6 +19,23 @@ class Player:
         # get the nth card of the hand and remove it
         return self.hand_.pop(n)
 
+    def addPlay(self, cardFromHand, cardInBoard):
+        alreadyOnBoard = False
+        for play in self.plays_:
+            if play.inBoard_ == cardInBoard:
+                alreadyOnBoard = True
+                play.add(cardFromHand)
+                self.lastPlay_ = (cardFromHand, cardInBoard)
+        if not self.plays_ or not alreadyOnBoard:
+            self.plays_.append(Play([cardFromHand], cardInBoard))
+            self.lastPlay_ = (cardFromHand, cardInBoard)
+
+    def getLastPlay(self):
+        for play in self.plays_:
+            if play.inBoard_ == self.lastPlay_[1]:
+                play.takebyid(self.lastPlay_[0].uuid_)
+                return self.lastPlay_
+
     def takeCardbyid(self, id):
         return self.hand_.takebyid(id)
 
@@ -24,7 +43,8 @@ class Player:
         self.plays_[iplay] = play
 
     def __repr__(self):
-        return '(Player '+ str(self.hand_) + ')'
+
+        return self.hand_.__repr__() +'\n'+'\n'.join([str(play) for play in self.plays_])
 
     def __getitem__(self, item):
         return self.hand_[item]
