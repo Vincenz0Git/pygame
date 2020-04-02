@@ -17,7 +17,7 @@ class Engine:
 
 
 class Play(Pile):
-    def __init__(self, inHand=[], inBoard=None, last=False):
+    def __init__(self, inHand=[], inBoard=None):
         # inHand: list of Cards
         # inBoard Card
         super().__init__()
@@ -25,7 +25,7 @@ class Play(Pile):
             self.add(card)
         self.ncards_ = len(inHand)
         self.inBoard_ = inBoard
-        self.lastPlay_ = last
+        self.isRight_ = False
 
     def set(self, inHand, inBoard):
         self.cards_ = inHand
@@ -59,4 +59,4 @@ class Play(Pile):
             return Bonus.NONE
 
     def __repr__(self):
-        return str(self.cards_) + "->" + str(self.inBoard_)
+        return str(self.cards_) + "->" + str(self.inBoard_) + " " + str(self.isRight())

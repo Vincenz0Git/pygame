@@ -29,9 +29,15 @@ class Card:
 
     def __repr__(self):
         if self.joker_ == 'number':
-            return self.color_.name[0] + 'J' + self.repruid()
+            if self.number_ == Number.JOKER:
+                return self.color_.name[0] + 'J' + self.repruid()
+            else:
+                return self.color_.name[0] + 'J' + ':' + str(self.number_.value) + ':' + self.repruid()
         elif self.joker_ == 'color':
-            return 'J' + str(self.number_.value) + self.repruid()
+            if self.color_ == Color.JOKER:
+                return 'J' + str(self.number_.value) + self.repruid()
+            else:
+                return 'J'+ ':' + self.color_.name[0] + ':' + str(self.number_.value) + self.repruid()
         else:
             return self.color_.name[0] + str(self.number_.value) + self.repruid()
         #return "{} {}".format(self.color_, self.number_)

@@ -76,9 +76,8 @@ class Game(Engine, Thread):
         player.deal1(self.deck_)
 
     def askToPutCard(self, player):
-        a=getInput('Put a card: ')
-        self.centralCards_.add(player.hand_.takebyid(player.hand_[int(a)].uuid_))
-
+        a = self.askInput('Put a card: ')
+        self.centralCards_.add(player.hand_.takebyid(int(a)))
 
     def checkNoPlays(self):
         for play in self.currentPlayer_.plays_:
@@ -97,6 +96,15 @@ class Game(Engine, Thread):
                     self.discardPile_.add(self.centralCards_.takebyid(play.inBoard_.uuid_))
                     self.centralCards_.add(self.deck_.takeTop())
         self.currentPlayer_.plays_ = []
+
+    def askJoker(self, card):
+        if card.joker_ == 'color' and card.color_ == Color.JOKER:
+            val = self.askInput(str(card) + ' ' + card.joker_ + ':')
+            card.color_ = Color[val]
+        elif card.joker_ == 'number' and card.number_ == Number.JOKER:
+            val = self.askInput(str(card) + ' ' + card.joker_ + ':')
+            card.number_ = Number[val]
+
 
     def getInput(self):
         # to be overwritten, must return a str object
@@ -120,25 +128,42 @@ class Game(Engine, Thread):
                 self.askToDraw(self.currentPlayer_)
                 self.replay_ = True
             elif playInput == 'done' and (not self.checkNoPlays() or self.replay_):
+                if self.replay_ and self.checkNoPlays():
+                    self.askToPutCard(self.currentPlayer_)
                 print('ending turn')
                 endTurn = True
                 break
             elif playInput == 'takeback':
                 try:
                     fromHand, inBoard = self.currentPlayer_.getLastPlay()
+                    if fromHand.joker_ == 'color':
+                        fromHand.color_ = Color.JOKER
+                    if fromHand.joker_ == 'number':
+                        fromHand.number_ = Number.JOKER
+                    if inBoard.joker_ == 'color':
+                        inBoard.color_ = Color.JOKER
+                    if inBoard.joker_ == 'number':
+                        inBoard.number_ = Number.JOKER
                     self.currentPlayer_.hand_.add(fromHand)
                 except:
                     print('error taking back')
             else:
                 try:
                     p = playInput.split(':')
+                    fromHand = self.currentPlayer_.takeCardbyid(int(p[0]))
+                    inBoard = self.centralCards_.getbyid(int(p[1]))[1]
+                    if fromHand.joker_:
+                        self.askJoker(fromHand)
+                    if inBoard.joker_:
+                        self.askJoker(inBoard)
                     self.currentPlayer_.addPlay(
-                     self.currentPlayer_.takeCardbyid(int(p[0])),
-                     self.centralCards_.getbyid(int(p[1]))[1]
+                     fromHand,
+                     inBoard
                     )
                 except:
                     print('wrong play')
                     pass
+            print('\n\n')
             self.sendOutput(str(self.centralCards_) + "\n" + str(self.currentPlayer_))
             playInput = self.getInput()
 
@@ -194,6 +219,8 @@ class Game(Engine, Thread):
     def initTurn(self):
         self.currentPlayer_ = self.players_[self.turn_ % self.nPlayers_]
         self.replay_ = False
+        for card in self.centralCards_:
+            self.currentPlayer_.plays_.append(Play([], card))
 
     def takeTurn(self):
         print('Turn: ', self.turn_)
