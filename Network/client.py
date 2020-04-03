@@ -8,7 +8,8 @@ import sys
 class TCPClient(socket.socket):
     def __init__(self):
         super().__init__(socket.AF_INET, socket.SOCK_STREAM)
-        self.host_ = "127.0.0.1"
+        with open("resources/ip.txt","r") as fid:
+            self.host_ = fid.read().strip()
         self.port_ = 9999
         self.signal_ = False
         self.receiveThread_ = threading.Thread(target=self.receive)
@@ -18,6 +19,7 @@ class TCPClient(socket.socket):
 
     def launch(self):
         try:
+            print('Host: ',self.host_,' change in resources/ip.txt')
             self.connect((self.host_, self.port_))
             self.signal_ = True
             self.receiveThread_.start()

@@ -27,7 +27,8 @@ class TCPServer(socket.socket):
         super().__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.clients_ = {}
         self.running_ = True
-        self.host_ = "127.0.0.1"
+        with open("resources/ip.txt","r") as fid:
+            self.host_ = fid.read().strip()
         self.port_ = 9999
         self.messages_ = Queue()
 
@@ -36,6 +37,7 @@ class TCPServer(socket.socket):
 
 
     def startServer(self):
+        print('Host: ',self.host_,' change in resources/ip.txt')
         self.bind((self.host_, self.port_))
         self.listen(5)
         self.newConnectionsThread = threading.Thread(target=self.newConnections)

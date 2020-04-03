@@ -7,6 +7,43 @@ from Game.myPlayers import Player
 from queue import Queue
 
 
+helpMessage = """
+-------------------------------------------------------------------------
+Commands:
+-------------------------------------------------------------------------
+/join [roomid] -> Join a room
+/ready         -> When in a room, toggle ready state
+/leave         -> Leave the current room
+/help          -> Print this menu
+/play [play]   -> In game, submit a play, see valid plays
+/roomstate     -> Print current room states
+/quit          -> Leave the game
+-------------------------------------------------------------------------
+Cards display:
+-------------------------------------------------------------------------
+[Color][Number](id)  -> Joker as J
+R1(112)
+J1(89)
+GJ(90)
+...
+-------------------------------------------------------------------------
+Plays display:
+-------------------------------------------------------------------------
+
+[card1, card2] -> card3 (left is from the hand, right is on board)
+
+valid plays:
+113:112  -> put card 113 from the hand to card 112 on the board (use ids)
+112      -> if card to put from the hand to the board asked (use ids)
+1        -> if number of joker asked
+RED      -> if color of joker asked
+takeback -> takeback the last play
+draw     -> draw one card
+done     -> finish turn
+-------------------------------------------------------------------------
+"""
+
+
 class PlayerOnline(Player):
     def __init__(self, socket):
         super().__init__()
@@ -157,12 +194,17 @@ class GameServer(TCPServer):
             print(args)
             self.queues_[room].put(args[0][0])
 
+        def help(sender, *args):
+            sender.sendMessage(helpMessage.encode())
+
         self.commandsClient_['/quit'] = quit
         self.commandsClient_['/roomstate'] = roomstate
         self.commandsClient_['/join'] = join
         self.commandsClient_['/leave'] = leave
         self.commandsClient_['/ready'] = ready
         self.commandsClient_['/play'] = play
+        self.commandsClient_['/help'] = help
+
 
     def getRoomState(self):
         return ''.join(['Room '+str(n)+' -> '+str(len(players))+' players\n'

@@ -29,3 +29,29 @@ https://docs.conda.io/en/latest/miniconda.html
 dependencies:
 
 - pygame
+
+### Demo ###
+
+Game in console with local input/output
+
+```console
+python demo/demogame.py
+```
+
+### Without GUI ###
+
+From the pygame folder:
+
+Launch the server:
+
+```console
+python GameServer.py
+```
+
+Launch the clients
+
+```console
+python GameClient.py
+```
+
+From the clients: /help to have the info

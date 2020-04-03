@@ -61,7 +61,7 @@ class Game(Engine, Thread):
         player.deal1(self.deck_)
 
     def askToPutCard(self, player):
-        a = self.askInput('Put a card: ')
+        a = self.askInput(self.currentPlayer_, 'Put a card: ')
         self.centralCards_.add(player.hand_.takebyid(int(a)))
 
     def checkNoPlays(self):
