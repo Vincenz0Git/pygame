@@ -59,4 +59,4 @@ class Play(Pile):
             return Bonus.NONE
 
     def __repr__(self):
-        return str(self.cards_) + "->" + str(self.inBoard_) + " " + str(self.isRight())
+        return str(self.cards_) + "->" + str(self.inBoard_) + " " + str(self.isRight()) + "\n"

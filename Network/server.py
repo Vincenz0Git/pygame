@@ -68,6 +68,12 @@ class TCPServer(socket.socket):
                 return uid
         return None
 
+    def getClientbyuid(self, uid):
+        for client in self.clients_.values():
+            if client.uid == uid:
+                return client
+        return None
+
     def getNewuid(self):
         for i in range(len(self.clients_)):
             if not self.clients_.get(i) == i:
@@ -139,7 +145,7 @@ class TCPServer(socket.socket):
         self.newConnectionsThread.join()
         for i, c in self.clients_.items():
             c.state_ = State.LEFT
-            c.socket.close()
+            c.socket_.close()
             c.join()
 
 
@@ -149,13 +155,14 @@ class Client(threading.Thread):
     # Along with an assigned uid and a name chosen by the client
     def __init__(self, socket, address, uid, name, signal, queue):
         threading.Thread.__init__(self)
-        self.socket = socket
+        self.socket_ = socket
         self.address = address
         self.uid = uid
         self.name = name
         self.queue_ = queue
         self.state_ = State.CONNECTED
         self.ready_ = False
+        self.inGame_ = False
 
     def __str__(self):
         return str(self.uid) + " " + str(self.address)
@@ -167,7 +174,7 @@ class Client(threading.Thread):
         pass
 
     def sendMessage(self, msg):
-        self.socket.sendall(msg)
+        self.socket_.sendall(msg)
 
     # Attempt to get data from client
     # If unable to, assume client has disconnected and remove him from server data
@@ -177,7 +184,7 @@ class Client(threading.Thread):
     def run(self):
         while not self.state_ == State.LEFT:
             try:
-                data = self.socket.recv(32)
+                data = self.socket_.recv(32)
             except OSError:
                 self.log(LOG.INFO, 'Server down, ending client' + str(self.uid))
                 break

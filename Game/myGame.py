@@ -96,27 +96,21 @@ class Game(Engine, Thread):
         while True:
             try:
                 if card.joker_ == 'color' and card.color_ == Color.JOKER:
-                    val = self.askInput(str(card) + ' ' + card.joker_ + ':')
+                    val = self.askInput(self.currentPlayer_, str(card) + ' ' + card.joker_ + ':')
                     card.color_ = Color[val]
                 elif card.joker_ == 'number' and card.number_ == Number.JOKER:
-                    val = self.askInput(str(card) + ' ' + card.joker_ + ':')
+                    val = self.askInput(self. currentPlayer_, str(card) + ' ' + card.joker_ + ':')
                     card.number_ = Number(int(val))
             except:
                     pass
             else:
                 break
 
-
-    def getInput(self):
-        # to be overwritten, must return a str object
-
-        return input('Play: ')
-
-    def sendOutput(self, msg):
+    def sendToPlayer(self, player, msg):
         # to be overwritten
         print(msg)
 
-    def askInput(self, msg):
+    def askInput(self, player, msg):
         # to be overwritten
         return input(msg)
 
@@ -133,8 +127,8 @@ class Game(Engine, Thread):
         self.currentPlayer_.hand_.add(fromHand)
 
     def getAllPlays(self):
-        self.sendOutput(str(self.centralCards_) + "\n" + str(self.currentPlayer_))
-        playInput = self.askInput('play: ')
+        self.sendToPlayer(self.currentPlayer_, str(self.centralCards_) + "\n" + str(self.currentPlayer_))
+        playInput = self.askInput(self.currentPlayer_, 'play: ')
         endTurn = False
         while not endTurn:
             if (playInput == 'draw' and not self.replay_):
@@ -142,19 +136,18 @@ class Game(Engine, Thread):
                 self.replay_ = True
             elif playInput == 'done':
                 if self.replay_ and self.checkNoPlays():
-                    print('mama')
                     self.askToPutCard(self.currentPlayer_)
-                elif self.currentPlayer_.allPlaysRight():
-                    print('ending turn')
+                elif not self.checkNoPlays() and self.currentPlayer_.allPlaysRight():
+                    self.sendToPlayer(self.currentPlayer_, 'ending turn')
                     endTurn = True
                     break
                 else:
-                    print('some plays are still wrong')
+                    self.sendToPlayer(self.currentPlayer_, 'some plays are still wrong')
             elif playInput == 'takeback':
                 try:
                     self.takeBack()
                 except:
-                    print('error taking back')
+                    self.sendToPlayer(self.currentPlayer_, 'error taking back')
             else:
                 try:
                     p = playInput.split(':')
@@ -169,11 +162,11 @@ class Game(Engine, Thread):
                      inBoard
                     )
                 except:
-                    print('wrong play: valid are => [idHand]:[idCenter], draw, done')
+                    self.sendToPlayer(self.currentPlayer_, 'wrong play: valid are => [idHand]:[idCenter], draw, done')
                     pass
-            print('\n\n')
-            self.sendOutput(str(self.centralCards_) + "\n" + str(self.currentPlayer_))
-            playInput = self.askInput('play: ')
+            self.sendToPlayer(self.currentPlayer_, '\n\n')
+            self.sendToPlayer(self. currentPlayer_, str(self.centralCards_) + "\n" + str(self.currentPlayer_))
+            playInput = self.askInput(self.currentPlayer_, 'play: ')
 
     def initTurn(self):
         self.currentPlayer_ = self.players_[self.turn_ % self.nPlayers_]
@@ -182,12 +175,12 @@ class Game(Engine, Thread):
             self.currentPlayer_.plays_.append(Play([], card))
 
     def takeTurn(self):
-        print('Turn: ', self.turn_)
         self.initTurn()
+        self.sendToPlayer(self.currentPlayer_, 'Turn: ' +str(self.turn_))
         self.getAllPlays()
 
         # When the plays are set and validated
         self.endTurn()
-        print('End turn')
-        print('=======================================================')
+        self.sendToPlayer(self.currentPlayer_, 'End turn')
+        self.sendToPlayer(self.currentPlayer_, '=======================================================')
         self.turn_ += 1

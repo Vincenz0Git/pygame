@@ -62,7 +62,7 @@ class Player:
 
     def __repr__(self):
 
-        return self.hand_.__repr__() +'\n'+'\n'.join([str(play) for play in self.plays_])
+        return self.hand_.__repr__() +'\n'+''.join([str(play) for play in self.plays_])
 
     def __getitem__(self, item):
         return self.hand_[item]

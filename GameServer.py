@@ -2,12 +2,59 @@
 
 from Network.server import TCPServer, State, LOG
 from Game.myGame import Game
+from Game.myPlayers import Player
+
+from queue import Queue
+
+
+class PlayerOnline(Player):
+    def __init__(self, socket):
+        super().__init__()
+        self.socket_ = socket
+
+    def sendMessage(self, msg):
+        self.socket_.sendall(msg.encode())
+
 
 
 class CommandException(BaseException):
     def __init__(self, msg):
         super().__init__()
         self.msg_ = msg
+
+
+class GameOnline(Game):
+    def __init__(self, uid, queue):
+        super().__init__(uid)
+        self.clientSockets_ = {}
+        self.queue_ = queue
+
+    def new(self):
+        self.deck_.new()
+        self.sendToAll('Fresh deck: '+str(self.deck_.ncards_))
+        #self.deck_.shuffle()
+        self.centralCards_.new(self.deck_, 2)
+        self.end_ = False
+        self.turn_ = 0
+        self.sendToAll(str(self.deck_)+str(self.centralCards_))
+
+    def addPlayer(self, socket):
+        self.nPlayers_ += 1
+        self.players_.append(PlayerOnline(socket))
+
+    def sendToPlayer(self, player, msg):
+        # to be overwritten
+        player.sendMessage(msg)
+
+    def sendToAll(self, msg):
+        for player in self.players_:
+            player.sendMessage(msg)
+
+    def askInput(self, player, msg):
+        # to be overwritten
+        player.sendMessage(msg)
+        a = self.queue_.get()
+        return a
 
 
 class GameServer(TCPServer):
@@ -19,7 +66,8 @@ class GameServer(TCPServer):
         self.commandsServer_ = {}
         self.initCmdsClient()
         self.initCmdsServer()
-        self.gameThreads_ = {}
+        self.games_ = {}
+        self.queues_ = {}
 
     def initCmdsServer(self):
         # List of server console commands
@@ -46,10 +94,14 @@ class GameServer(TCPServer):
             print(state)
 
         def startgame(*args):
-            room = args[0][0]
-            self.gameThreads[room] = Game(room)
-            self.gameThreads[room].new(len(self.rooms_[room]))
-            self.gameThreads_.start()
+            room = int(args[0][0])
+            self.queues_[room] = Queue()
+            self.games_[room] = GameOnline(room, self.queues_[room])
+            self.games_[room].new()
+            for uid in self.rooms_[room]:
+                self.games_[room].addPlayer(self.clients_[uid].socket_)
+            self.games_[room].dealAlln(7)
+            self.games_[room].start()
 
         self.commandsServer_['/quit'] = quit
         self.commandsServer_['/checkready'] = cheackready
@@ -100,11 +152,17 @@ class GameServer(TCPServer):
             else:
                 sender.sendMessage('You are not in a room'.encode())
 
+        def play(sender, *args):
+            room = self.getRoomOfuid(sender.uid)
+            print(args)
+            self.queues_[room].put(args[0][0])
+
         self.commandsClient_['/quit'] = quit
         self.commandsClient_['/roomstate'] = roomstate
         self.commandsClient_['/join'] = join
         self.commandsClient_['/leave'] = leave
         self.commandsClient_['/ready'] = ready
+        self.commandsClient_['/play'] = play
 
     def getRoomState(self):
         return ''.join(['Room '+str(n)+' -> '+str(len(players))+' players\n'
@@ -127,7 +185,7 @@ class GameServer(TCPServer):
             # TODO dict commands list
             try:
                 self.commandsServer_[cmd[0]](cmd[1:])
-            except KeyError:
+            except IndentationError:
                 self.log(LOG.ERROR, 'Unknown server command')
         else:
             # Client commands
