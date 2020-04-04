@@ -1,23 +1,21 @@
 import pygame
 
 
-from cst import Color, Number
-
 class Spritesheet:
     def __init__(self, filename):
-        self.sheet = pygame.image.load(filename).convert()
+        self.sheet = pygame.image.load(filename).convert_alpha()
         #print('Unable to load spritesheet image:', filename)
 
     # Load a specific image from a specific rectangle
     def image_at(self, rectangle, colorkey = None):
         "Loads image from x,y,x+offset,y+offset"
         rect = pygame.Rect(rectangle)
-        image = pygame.Surface(rect.size).convert()
+        image = pygame.Surface(rect.size, pygame.SRCALPHA).convert_alpha()
         image.blit(self.sheet, (0, 0), rect)
         if colorkey is not None:
             if colorkey is -1:
                 colorkey = image.get_at((0,0))
-            image.set_colorkey(colorkey, pygame.RLEACCEL)
+            #image.set_colorkey(colorkey, pygame.RLEACCEL)
         return image
     # Load a whole bunch of images and return them as a list
     def images_at(self, rects, colorkey = None):
@@ -45,5 +43,5 @@ class SpriteCards(Spritesheet):
 
     def getCardImage(self,color,number,scale):
         # get Surface object with image of card
-        image = self.image_at(self.getRectangle(color.value,number.value))
+        image = self.image_at(self.getRectangle(color,number))
         return pygame.transform.smoothscale(image,scale)

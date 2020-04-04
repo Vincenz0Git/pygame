@@ -2,10 +2,12 @@
 
 import pygame
 from pygame.locals import *
+from GUI.mySprite import SpriteCards
 
 from math import floor
 
-RESOLUTION = (1000, 500)
+RESOLUTION = (1000, 700)
+CARDSIZE = (120,200)
 
 def scaleTuple(t,scale):
     return floor(t[0]*scale), floor(t[1]*scale)
@@ -17,7 +19,9 @@ class App:
         self.screen_ = pygame.display.set_mode(RESOLUTION)
         self.clock_ = pygame.time.Clock()
         self.running_ = True
-        self.background_ = self.loadImage("resources/table.jpg", scaleTuple(RESOLUTION, 0.8))
+        self.background_ = self.loadImage("resources/table2.png", scaleTuple(RESOLUTION, 1))
+        self.cardsSprites_ = SpriteCards('resources/sprites.png')
+        self.c1 = self.cardsSprites_.getCardImage(1, 2, CARDSIZE)
         self.mainLoop()
 
     def mainLoop(self):
@@ -25,8 +29,9 @@ class App:
             self.clock_.tick(60)
             self.handleEvents()
 
-            self.screen_.blit(self.background_,scaleTuple(RESOLUTION, 0.1))
-            pygame.draw.ellipse(self.screen_,(255,0,0),(0,0,500,200))
+            self.screen_.blit(self.background_,(0,0))
+            self.screen_.blit(self.c1,(100,100))
+            #pygame.draw.ellipse(self.screen_,(255,0,0),(0,0,500,200))
             pygame.draw.rect(self.screen_, (0, 128, 255), pygame.Rect(30, 30, 60, 60))
             self.flip()
 
