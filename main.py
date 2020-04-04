@@ -3,21 +3,50 @@
 import pygame
 import pygame.gfxdraw
 from pygame.locals import *
-#from mySprite import SpriteCards, Color, Number
-#from myDrawables import DrawableCard
-from Game.myGame import Game
+#from GUI.mySprite import SpriteCards, Color, Number
+#from GUI.myDrawables import DrawableCard
+
+pygame.init()
+screen = pygame.display.set_mode((400, 300))
+done = False
+is_blue = True
+x = 30
+y = 30
+
+clock = pygame.time.Clock()
+
+while not done:
+        for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                        done = True
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                        is_blue = not is_blue
+
+        pressed = pygame.key.get_pressed()
+        if pressed[pygame.K_UP]: y -= 3
+        if pressed[pygame.K_DOWN]: y += 3
+        if pressed[pygame.K_LEFT]: x -= 3
+        if pressed[pygame.K_RIGHT]: x += 3
+
+        screen.fill((0, 0, 0))
+        if is_blue: color = (0, 128, 255)
+        else: color = (255, 100, 0)
+        pygame.draw.rect(screen, color, pygame.Rect(x, y, 60, 60))
+
+        pygame.display.flip()
+        clock.tick(60)
+
+
+
+
+
+
+
+sys.exit(0)
 
 import os, sys
 
 RESOLUTION = (1000, 500)
-
-g = Game()
-g.new(1)
-g.dealAlln(7)
-g.launch()
-
-sys.exit(0)
-
 
 pygame.init()
 
@@ -28,14 +57,14 @@ fake_screen = screen.copy()
 print(os.getcwd())
 
 
-spritesCards = SpriteCards('sprites.png')
+spritesCards = SpriteCards('resources/sprites.png')
 
 
 
 
 click_pos = (0, 0)
 
-c = DrawableCard(spritesCards, Card(Color.GREEN, Number.THREE), (400, RESOLUTION[1]*0.75), 30)
+#c = DrawableCard(spritesCards, Card(Color.GREEN, Number.THREE), (400, RESOLUTION[1]*0.75), 30)
 
 
 done = False
@@ -45,7 +74,7 @@ y = 30
 
 clock = pygame.time.Clock()
 
-fond = pygame.image.load("table.jpg").convert()
+fond = pygame.image.load("resources/table.jpg").convert()
 
 while not done:
 

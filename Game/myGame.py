@@ -87,8 +87,11 @@ class Game(Engine, Thread):
         txt = 'Put a card: \n'
         while True:
             try:
-                a = self.askInput(self.currentPlayer_, txt)
-                self.centralCards_.add(player.hand_.takebyid(int(a)))
+                if not len(self.currentPlayer_.hand_) == 0:
+                    a = self.askInput(self.currentPlayer_, txt)
+                    self.centralCards_.add(player.hand_.takebyid(int(a)))
+                else:
+                    break
             except:
                 txt = ''
             else:
@@ -102,8 +105,6 @@ class Game(Engine, Thread):
 
     def endTurn(self):
         self.currentPlayer_.getBonus()
-
-        self.currentPlayer_.plays_ = []
         for bonus in self.currentPlayer_.bonus_:
             if bonus == Bonus.COLOR1:
                 self.askToPutCard(self.currentPlayer_)
@@ -112,6 +113,8 @@ class Game(Engine, Thread):
                 for player in self.players_:
                     if not player == self.currentPlayer_:
                         self.askToDraw(player)
+
+        self.currentPlayer_.bonus_ = []
 
         for play in self.currentPlayer_.plays_:
             for card in play:
@@ -124,9 +127,11 @@ class Game(Engine, Thread):
                 if len(self.centralCards_) < 2:
                     self.centralCards_.add(self.deck_.takeTop())
 
+        self.currentPlayer_.plays_ = []
+
         if len(self.currentPlayer_.hand_) == 0:
             self.end_ = True
-            self.sendToAll('Player ' + self.currentPlayer_.name_ + ' wins!!!!!')
+            self.sendToAll('Player ' + str(self.currentPlayer_.name_) + ' wins!!!!!')
 
     def askJoker(self, card):
         txtcolor = str(card) + ' ' + card.joker_ + ':'
