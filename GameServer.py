@@ -17,6 +17,7 @@ Commands:
 /help          -> Print this menu
 /play [play]   -> In game, submit a play, see valid plays
 /roomstate     -> Print current room states
+/name [name]   -> change name (outside the game)
 /quit          -> Leave the game
 -------------------------------------------------------------------------
 Cards display:
@@ -45,13 +46,18 @@ done     -> finish turn
 
 
 class PlayerOnline(Player):
-    def __init__(self, socket):
+    """
+    From Player
+    add a socket and redefined the sendMessage method
+    """
+    def __init__(self, socket, uid, name):
         super().__init__()
         self.socket_ = socket
+        self.uid_ = uid
+        self.name_ = name
 
     def sendMessage(self, msg):
         self.socket_.sendall(msg.encode())
-
 
 
 class CommandException(BaseException):
@@ -61,6 +67,12 @@ class CommandException(BaseException):
 
 
 class GameOnline(Game):
+    """
+    From Game
+    Reimplement the addPlayer to add PlayerOnline, + the methods
+    to send and receive message to/from clients using the TCPServer
+    interface.
+    """
     def __init__(self, uid, queue):
         super().__init__(uid)
         self.clientSockets_ = {}
@@ -75,9 +87,9 @@ class GameOnline(Game):
         self.turn_ = 0
         self.sendToAll(str(self.deck_)+str(self.centralCards_))
 
-    def addPlayer(self, socket):
+    def addPlayer(self, socket, uid, name):
         self.nPlayers_ += 1
-        self.players_.append(PlayerOnline(socket))
+        self.players_.append(PlayerOnline(socket, uid, name))
 
     def sendToPlayer(self, player, msg):
         # to be overwritten
@@ -90,11 +102,24 @@ class GameOnline(Game):
     def askInput(self, player, msg):
         # to be overwritten
         player.sendMessage(msg)
-        a = self.queue_.get()
-        return a
+        uid, a = self.queue_.get()
+        if uid == self.currentPlayer_.uid_:
+            return a
+        else:
+            return None
 
 
 class GameServer(TCPServer):
+    """
+    From TCPServer
+
+    Defines the rooms for playing and a list of server and client commands.
+
+    games_ {uid:GameOnline} is the dict of current games being played. queues_
+    are common to the attribut in GameOnline and used to dispatch the messages
+    to them.
+    """
+
     def __init__(self):
         super().__init__()
 
@@ -136,16 +161,13 @@ class GameServer(TCPServer):
             self.games_[room] = GameOnline(room, self.queues_[room])
             self.games_[room].new()
             for uid in self.rooms_[room]:
-                self.games_[room].addPlayer(self.clients_[uid].socket_)
+                self.games_[room].addPlayer(self.clients_[uid].socket_, uid, self.clients_[uid].name_)
             self.games_[room].dealAlln(7)
             self.games_[room].start()
 
         self.commandsServer_['/quit'] = quit
         self.commandsServer_['/checkready'] = cheackready
         self.commandsServer_['/startgame'] = startgame
-
-
-
 
     def initCmdsClient(self):
         # List of client console commands
@@ -159,29 +181,29 @@ class GameServer(TCPServer):
 
         def join(sender, *args):
             roomid = args[0][0]
-            currentRoom = self.getRoomOfuid(sender.uid)
+            currentRoom = self.getRoomOfuid(sender.uid_)
             if not len(args[0]) == 1 or \
                not roomid.isdigit() or \
                int(roomid) not in self.rooms_.keys():
                 raise CommandException('/join [room id]')
             elif not currentRoom == int(roomid):
                 if currentRoom:
-                    self.rooms_[currentRoom].remove(sender.uid)
-                self.rooms_[int(roomid)].add(sender.uid)
+                    self.rooms_[currentRoom].remove(sender.uid_)
+                self.rooms_[int(roomid)].add(sender.uid_)
                 sender.sendMessage(('Joined room '+roomid).encode())
             else:
                 # already in room, nothing to do
                 pass
 
         def leave(sender, *args):
-            currentRoom = self.getRoomOfuid(sender.uid)
+            currentRoom = self.getRoomOfuid(sender.uid_)
             if currentRoom:
-                self.rooms_[currentRoom].remove(sender.uid)
+                self.rooms_[currentRoom].remove(sender.uid_)
             sender.ready_ = False
             sender.sendMessage(('Leaved room '+str(currentRoom)).encode())
 
         def ready(sender, *args):
-            if self.isInRoom(sender.uid):
+            if self.isInRoom(sender.uid_):
                 sender.ready_ = not sender.ready_
                 rep = 'You are' + ('' if sender.ready_ else ' not') + ' ready!'
                 sender.sendMessage(rep.encode())
@@ -190,12 +212,15 @@ class GameServer(TCPServer):
                 sender.sendMessage('You are not in a room'.encode())
 
         def play(sender, *args):
-            room = self.getRoomOfuid(sender.uid)
+            room = self.getRoomOfuid(sender.uid_)
             print(args)
-            self.queues_[room].put(args[0][0])
+            self.queues_[room].put((sender.uid_, args[0][0]))
 
         def help(sender, *args):
             sender.sendMessage(helpMessage.encode())
+
+        def name(sender, *args):
+            sender.name_ = args[0][0]
 
         self.commandsClient_['/quit'] = quit
         self.commandsClient_['/roomstate'] = roomstate
@@ -204,7 +229,7 @@ class GameServer(TCPServer):
         self.commandsClient_['/ready'] = ready
         self.commandsClient_['/play'] = play
         self.commandsClient_['/help'] = help
-
+        self.commandsClient_['/name'] = name
 
     def getRoomState(self):
         return ''.join(['Room '+str(n)+' -> '+str(len(players))+' players\n'
@@ -220,11 +245,10 @@ class GameServer(TCPServer):
         return not self.getRoomOfuid(uid) == None
 
     def handleNewMessage(self, msg, uid):
-
+        # Redefinition of the parent method to handle the sockets
         cmd = msg.decode().split()
         if uid == -1:
             # Server commands
-            # TODO dict commands list
             try:
                 self.commandsServer_[cmd[0]](cmd[1:])
             except IndentationError:

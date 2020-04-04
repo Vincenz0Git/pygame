@@ -3,7 +3,6 @@ import socket
 import threading
 from queue import Queue
 import time
-# Variables for holding information about connections
 
 #TODO disconnecting: end request or recv()->b''
 
@@ -23,6 +22,25 @@ class LOG(Enum):
 
 
 class TCPServer(socket.socket):
+    """
+    Create a TCP server on address/port given in the resources/ip.txt file.
+    defines a thread to handle the new connections from clients and another
+    to handle the messages coming from the clients.
+
+    The main loop is for the moment done in the main thread.
+
+    The clients_ are organized in {uid:Client()}
+
+    handleNewMessage is meant to be overriden in the child classes.
+
+    messages_ is a queue that gets the messages from all the clients and then
+    is processed in the newMessageThread. All the clients share the same queue
+
+    >>  s = TCPServer()
+    >>  s.startServer()
+    >>  s.mainLoop()
+    """
+
     def __init__(self):
         super().__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.clients_ = {}
@@ -35,7 +53,6 @@ class TCPServer(socket.socket):
     def log(self, type, msg):
         print(type.name + ': ' + msg)
 
-
     def startServer(self):
         print('Host: ',self.host_,' change in resources/ip.txt')
         self.bind((self.host_, self.port_))
@@ -46,7 +63,6 @@ class TCPServer(socket.socket):
         self.newMessageThread.start()
         self.log(LOG.INFO, 'Server started')
 
-
     def mainLoop(self):
         # Blocking process, wait for user input
         while True:
@@ -55,30 +71,26 @@ class TCPServer(socket.socket):
             if '/quit' in cmd:
                 self.kill()
                 break
-            #     self.kill()
-            #     break
-            #if cmd == '/quit':
-            #    self.kill()
-            #    break
 
     def addClient(self, client, uid):
         self.clients_[uid] = client
 
     def getClientuid(self, client):
         for uid, cl in self.clients_.items():
-            if client.uid == uid:
+            if client.uid_ == uid:
                 return uid
         return None
 
     def getClientbyuid(self, uid):
         for client in self.clients_.values():
-            if client.uid == uid:
+            if client.uid_ == uid:
                 return client
         return None
 
     def getNewuid(self):
+        ids = self.clients_.keys()
         for i in range(len(self.clients_)):
-            if not self.clients_.get(i) == i:
+            if not i in ids:
                 return i
         return len(self.clients_)
 
@@ -109,6 +121,7 @@ class TCPServer(socket.socket):
         self.log(LOG.INFO, 'Closing new connection thread a')
 
     def newMessage(self):
+        # Target for the newMessageThread
         while self.running_:
             uid, msg = self.messages_.get()
             self.handleNewMessage(msg, uid)
@@ -119,7 +132,6 @@ class TCPServer(socket.socket):
     def handleNewMessage(self, msg, uid):
         if uid == -1:
             self.running_ = False
-            #self.log(LOG.INFO, "Closing new Messages thread")
         else:
             if msg == b'quit':
                 self.clients_[uid].state_ = State.LEFT
@@ -137,8 +149,7 @@ class TCPServer(socket.socket):
             cl.sendMessage(msg)
 
     def removeClient(self, client):
-        #uid = self.getClientuid(client)
-        self.clients_.pop(client.uid)
+        self.clients_.pop(client.uid_)
 
     def kill(self):
         self.messages_.join()
@@ -152,22 +163,28 @@ class TCPServer(socket.socket):
 
 
 class Client(threading.Thread):
-    # Client class, new instance created for each connected client
-    # Each instance has the socket and address that is associated with items
-    # Along with an assigned uid and a name chosen by the client
+    """
+    Client class, new instance created for each connected client
+    Each instance has the socket and address that is associated with items
+    Along with an assigned uid
+
+    queue_ is the queue shared with the TCPServer, new messages received are
+    put in it with the uid of the client.
+    """
+
     def __init__(self, socket, address, uid, name, signal, queue):
         threading.Thread.__init__(self)
         self.socket_ = socket
-        self.address = address
-        self.uid = uid
-        self.name = name
+        self.address_ = address
+        self.uid_ = uid
+        self.name_ = uid
         self.queue_ = queue
         self.state_ = State.CONNECTED
         self.ready_ = False
         self.inGame_ = False
 
     def __str__(self):
-        return str(self.uid) + " " + str(self.address)
+        return str(self.uid_) + " " + str(self.address_)
 
     def log(self, type, msg):
         print(type.name + ': ' + msg)
@@ -178,27 +195,21 @@ class Client(threading.Thread):
     def sendMessage(self, msg):
         self.socket_.sendall(msg)
 
-    # Attempt to get data from client
-    # If unable to, assume client has disconnected and remove him from server data
-    # If able to and we get data back, print it in the server and send it back to every
-    # client asuide from the client that has sent it
-    # .decode is used to convert the byte data into a printable string
     def run(self):
         while not self.state_ == State.LEFT:
             try:
                 data = self.socket_.recv(32)
             except OSError:
-                self.log(LOG.INFO, 'Server down, ending client' + str(self.uid))
+                self.log(LOG.INFO, 'Server down, ending client' + str(self.uid_))
                 break
             if data != b'':
-                self.queue_.put((self.uid, data))
+                self.queue_.put((self.uid_, data))
             elif self.state_ == State.LEFT:
                 self.log(LOG.INFO, "Disconnected uid "+str(self))
             else:
                 self.state_ = State.DISCONNECTED
-                self.log(LOG.INFO, 'Lost connection with '+str(self.uid)+'timeout in ..')
+                self.log(LOG.INFO, 'Lost connection with '+str(self.uid_)+'timeout in ..')
                 time.sleep(2)
-
 
 
 def test():
@@ -220,6 +231,7 @@ def test():
         except KeyboardInterrupt:
             s2.close()
             break
+
 
 if __name__ == '__main__':
     s = TCPServer()

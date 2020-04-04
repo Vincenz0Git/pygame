@@ -6,6 +6,12 @@ import sys
 
 
 class TCPClient(socket.socket):
+    """
+    Client socket, threads the receive method to handles new messages from the
+    server. prints the messages, can be overriden to handles GUI
+
+    Input is done in the main thread
+    """
     def __init__(self):
         super().__init__(socket.AF_INET, socket.SOCK_STREAM)
         with open("resources/ip.txt","r") as fid:

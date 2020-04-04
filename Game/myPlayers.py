@@ -8,6 +8,8 @@ class Player:
         self.plays_ = []
         self.bonus_ = []
         self.lastPlay_ = ()
+        self.uid_ = None
+        self.name_ = self.uid_
 
     def deal1(self, deck):
         self.hand_.add(deck.takeTop())
