@@ -3,7 +3,7 @@
 import pygame
 from pygame.locals import *
 from GUI.mySprite import SpriteCards
-from GUI.myDrawables import DrawableCard
+from GUI.myDrawables import DrawableCard, MainPlayer
 from GUI.myMath import Rec, Point2
 
 import pygame.gfxdraw
@@ -11,6 +11,8 @@ import pygame.gfxdraw
 from math import floor
 
 RESOLUTION = (1000, 700)
+MAINHANDSIZE = (700,150)
+MAINHANDPOS = Point2(150,550)
 
 
 def scaleTuple(t,scale):
@@ -27,6 +29,7 @@ class App:
         self.cardsSprites_ = SpriteCards('resources/sprites.png')
         self.offx_ = 0
         self.offy_ = 0
+        self.mp = MainPlayer(MAINHANDPOS, 0, MAINHANDSIZE, self.cardsSprites_)
         self.c1 = DrawableCard(self.cardsSprites_.getCardImage(1, 2, DrawableCard.CARDSIZE), (70,80), 30)
         self.mainLoop()
 
@@ -36,8 +39,8 @@ class App:
             self.handleEvents()
 
             self.screen_.blit(self.background_,(0,0))
-            self.screen_.blit(self.c1.getImage(), self.c1.pos_)
-            pygame.gfxdraw.polygon(self.screen_, self.c1.hitBox()(False), (255,0,0,255))
+            self.c1.draw(self.screen_,True)
+            self.mp.draw(self.screen_)
             #pygame.draw.ellipse(self.screen_,(255,0,0),(0,0,500,200))
             #pygame.draw.rect(self.screen_, (0, 128, 255), pygame.Rect(30, 30, 60, 60))
             self.flip()
@@ -54,6 +57,17 @@ class App:
                 self.running_ = False
             if event.type == pygame.MOUSEMOTION:
                 mouse_x, mouse_y = event.pos
+
+                for card in self.mp.cards_:
+                    card.zoom_ = DrawableCard.CARDSIZE
+                    card.isHovered_ = False
+
+                card = self.mp.checkCursorIn(Point2(*event.pos))
+                if card:
+                    card.zoom_ = (180, 240)
+                    card.isHovered_ = True
+                    #print(card.pos_)
+
                 if self.c1.isPointIn(Point2(mouse_x, mouse_y)):
                     self.c1.zoom_ = (140,200)
                 else:

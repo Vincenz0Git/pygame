@@ -1,5 +1,7 @@
 import math
 
+from operator import itemgetter
+
 
 class Point2:
     def __init__(self,x,y):
@@ -19,6 +21,9 @@ class Point2:
 
         return Point2(qx,qy)
 
+    def norm(self):
+        return math.sqrt(self.x_**2 + self.y_**2)
+
     def __mul__(self, other):
         return self.x_*other.x_ + self.y_*other.y_
 
@@ -35,12 +40,15 @@ class Point2:
 class Polygon:
     def __init__(self, points = []):
         self.points_ = points
+        self.currentPoints_ = points
 
     def translate(self, translation):
-        return Polygon([point+translation for point in self.points_])
+        self.currentPoints_ = [point+translation for point in self.points_]
+        return self.currentPoints_
 
     def zoom(self, zoom):
-        return Polygon([Point2(point.x_ * zoom.x_,point.y_*zoom.y_) for point in self.points_])
+        self.currentPoints_ = [Point2(point.x_ * zoom.x_,point.y_*zoom.y_) for point in self.points_]
+        return self.currentPoints_
 
     def rotate(self, origin, angle):
 
@@ -58,8 +66,8 @@ class Polygon:
         #a = Polygon([Point2(el.x_-minx*(minx<0),el.y_-miny*(miny<0)) for el in l])
 
         #print([el() for el in a.points_])
-
-        return Polygon([Point2(el.x_-minx*(minx<0),el.y_-miny*(miny<0)) for el in l])
+        self.currentPoints_ = [Point2(el.x_-minx*(minx<0),el.y_-miny*(miny<0)) for el in l]
+        return self.currentPoints_
 
     def __call__(self, formatPoint2):
         if formatPoint2:
@@ -77,21 +85,42 @@ class Rec(Polygon):
                          Point2(size[0],0),
                          Point2(size[0],size[1]),
                          Point2(0,size[1]) ]
+
+        self.currentPoints_ = self.points_
+
         self.size_ = size
 
+
+
+    def center(self):
+        pc = self.points_[0] + self.points_[2]
+        return Point2(pc.x_/2, pc.y_/2)
+
     def rotate(self, origin, angle):
-        return Rec(super().rotate(origin, angle)(True))
+        return Rec(super().rotate(origin, angle))
 
     def translate(self, translation):
-        return Rec(super().translate(translation)(True))
+        return Rec(super().translate(translation))
 
     def zoom(self, pzoom):
         # pzoom is the new size of the card
-        return Rec(super().zoom(Point2(pzoom[0]/self.size_[0], pzoom[1]/self.size_[1]))(True))
+        return Rec(super().zoom(Point2(pzoom[0]/self.size_[0], pzoom[1]/self.size_[1])))
+
+    def get3Vertices(self):
+        # in a rectangle: # # # # # # # # # #
+        # o ----------  # # # # # # # # # # #
+        # | # # # # # | # # # # # # # # # # #
+        # o ----------o # # # # # # # # # # #
+        # Useful to check if a point is inside
+        return itemgetter(0, 1, 3)(self.points_)
 
     def isPointIn(self, target):
         # check if target Point2 is in the rectangle
-        topleft = self.points_[0]
-        l = [ point - topleft for point in self.points_[1:]]
+        points = self.get3Vertices()
+        topleft = points[0]
+        l = [ point - topleft for point in points[1:]]
         v = target - topleft
         return 0 < v*l[0] < l[0]*l[0] and 0 < v*l[1] < l[1]*l[1]
+
+    def __call__(self):
+        return [point() for point in self.points_]
