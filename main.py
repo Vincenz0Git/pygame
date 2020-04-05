@@ -97,10 +97,10 @@ while not done:
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if c.isPointIn(event.pos):
-                c.draggable_ = True
                 mouse_x, mouse_y = event.pos
                 offset_x = c.pos_[0] - mouse_x
                 offset_y = c.pos_[1] - mouse_y
+                c.draggable_ = True
             pass
 
         if event.type == pygame.MOUSEBUTTONUP:

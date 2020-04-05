@@ -1,8 +1,7 @@
 from pygame.sprite import Sprite
-from mySprite import SpriteCards
+from GUI.mySprite import SpriteCards
 from pygame import transform
-from myCards import Card
-from myMath import *
+from GUI.myMath import *
 from operator import itemgetter
 
 class Drawable(Sprite):
@@ -11,33 +10,38 @@ class Drawable(Sprite):
         Sprite.__init__(self)
         self.rot_ = rot
         self.pos_ = pos
-        self.polygon_ = [(0, 0),
-                         (DrawableCard.SCALE[0], 0),
-                         (DrawableCard.SCALE[0], DrawableCard.SCALE[1]),
-                         (0, DrawableCard.SCALE[1])]
+        self.polygon_ = None
         self.image_ = None
 
 
 class DrawableCard(Drawable):
-    SCALE = (100, 140)
+    CARDSIZE = (120,180)
 
-    def __init__(self, spritesheet, card, pos, rot):
+    def __init__(self, image, pos, rot):
         # Call the parent class (Sprite) constructor
         Drawable.__init__(self, pos, rot)
-
-        print('aaa')
-        self.image_ = spritesheet.getCardImage(card.color_, card.number_, DrawableCard.SCALE)
-
+        self.image_ = image
+        self.zoom_ = DrawableCard.CARDSIZE
+        self.polygon_ = Rec()
+        self.polygon_.initFromSize(DrawableCard.CARDSIZE)
+        # [(0, 0),
+        #                  (DrawableCard.CARDSIZE[0], 0),
+        #                  (DrawableCard.CARDSIZE[0], DrawableCard.CARDSIZE[1]),
+        #                  (0, DrawableCard.CARDSIZE[1])]
         # Fetch the rectangle object that has the dimensions of the image
         # Update the position of this object by setting the values of rect.x and rect.y
         self.draggable_ = False
 
     def getImage(self):
-        return transform.rotate(self.image_, self.rot_)
+        z = transform.smoothscale(self.image_, self.zoom_)
+        return transform.rotate(z, self.rot_)
 
-    def getPolygonTransformed(self):
-        rl = rotatelist(self.polygon_, (0, 0), self.rot_*math.pi/180)
-        return translatelist(rl, self.pos_)
+    def hitBox(self):
+        # return Rec polygon hitbox
+        zl = self.polygon_.zoom(self.zoom_)
+        rl = zl.rotate(Point2(0,0),self.rot_*math.pi/180)
+
+        return rl.translate(Point2(*self.pos_))
 
     def get3Vertices(self):
         # in a rectangle: # # # # # # # # # #
@@ -48,10 +52,4 @@ class DrawableCard(Drawable):
         return itemgetter(0, 1, 3)(self.getPolygonTransformed())
 
     def isPointIn(self, point):
-        return isin(point, self.get3Vertices() )
-
-
-
-class DrawableCards:
-    def __init__(self):
-        pass
+        return self.hitBox().isPointIn(point)
