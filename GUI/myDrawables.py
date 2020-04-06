@@ -1,18 +1,62 @@
-from pygame.sprite import Sprite
-from GUI.mySprite import SpriteCards
 from pygame import transform
-from GUI.myMath import *
-from operator import itemgetter
+from GUI.myMath import Point2, Rec
 import pygame.gfxdraw
+import math
 
-class Drawable(Sprite):
-    def __init__(self, pos, rot):
+
+class Drawable:
+    def __init__(self, pos, rot, zoom):
         # has a position, a rotation angle and a polygon hitbox
-        Sprite.__init__(self)
         self.rot_ = rot
         self.pos_ = pos
         self.polygon_ = None
         self.image_ = None
+        self.zoom_ = zoom
+
+    def getImage(self):
+        z = transform.smoothscale(self.image_, self.zoom_)
+        return transform.rotate(z, self.rot_)
+
+    def draw(self, screen, hb):
+        screen.blit(self.getImage(), self.pos_())
+        if hb:
+            pygame.gfxdraw.polygon(screen, self.hitBox()(), (255,0,0,255))
+
+    def hitBox(self):
+        # return Rec polygon hitbox
+        zl = self.polygon_.zoom(self.zoom_)
+        rl = zl.rotate(Point2(0,0),self.rot_*math.pi/180)
+        return rl.translate(self.pos_)
+
+
+class Deck(Drawable):
+    def __init__(self, image, pos, rot, zoom):
+        super().__init__(pos, rot, zoom)
+        self.image_ = image
+        self.polygon_ = Rec()
+        self.polygon_.initFromSize(zoom)
+
+
+class Board:
+    def __init__(self, sheet):
+        self.centralCards_ = []
+        self.zoneCards_ = Rec([Point2(280,180), Point2(800,180), Point2(800,330), Point2(280,330)])
+        self.zonePlays_ = Rec([Point2(280,330), Point2(800,330), Point2(800,480), Point2(280,480)])
+        self.d = Deck(sheet.getCardImage(4, 1, DrawableCard.CARDSIZE),Point2(160,180),0, DrawableCard.CARDSIZECENTER)
+        self.initSomeCards(sheet)
+
+    def initSomeCards(self, sheet):
+        self.centralCards_.append(
+         DrawableCard(sheet.getCardImage(2, 3, DrawableCard.CARDSIZE),Point2(290,185),0, DrawableCard.CARDSIZECENTER)
+        )
+
+    def draw(self, screen):
+        pygame.gfxdraw.polygon(screen, self.zoneCards_(), (0,0,255,255))
+        pygame.gfxdraw.polygon(screen, self.zonePlays_(), (0,0,255,255))
+        screen.blit(self.d.getImage(), self.d.pos_())
+        for card in self.centralCards_:
+            card.draw(screen, True)
+
 
 class MainPlayer:
     def __init__(self, pos, rot, size, sheet):
@@ -29,7 +73,6 @@ class MainPlayer:
         listIn = []
         for card in self.cards_:
             if card.hitBox().isPointIn(cursor):
-                print(card.pos_[0])
                 listIn.append(card)
 
         if len(listIn) == 1:
@@ -72,16 +115,15 @@ class MainPlayer:
             rot = rotmax + i/(len(l)-1)*(-rotmax - rotmax)
             posx = boardLeft+i/(len(l)-1)*(boardRight - boardLeft)
             t = rotmax/20
-            print(t)
             posy = self.pos_.y_+t*self.handZone_.size_[1]/10
             pos = (posx, posy)
 
             self.cards_.append(
-             DrawableCard(sheet.getCardImage(a, b, DrawableCard.CARDSIZE),pos,rot)
+             DrawableCard(sheet.getCardImage(a, b, DrawableCard.CARDSIZE),Point2(*pos),rot,DrawableCard.CARDSIZE)
             )
 
             if i > 0:
-                posLeft1 = self.cards_[i-1].hitBox().points_[0]
+                posLeft1 = self.cards_[i-1].hitBox().points_[1]
                 posLeft2 = self.cards_[i-1].hitBox().points_[1]
                 posRight = self.cards_[i].hitBox().points_[0]
 
@@ -89,9 +131,8 @@ class MainPlayer:
                 posLeft = posLeft1.y_*(1-t) + posLeft2.y_*t
                 offsety = posLeft - posRight.y_
 
-                self.cards_[i].pos_ = (self.cards_[i].pos_[0], self.cards_[i].pos_[1]+offsety)
+                self.cards_[i].pos_ = Point2(self.cards_[i].pos_.x_, self.cards_[i].pos_.y_+offsety)
                 self.cards_[i].polygon_.translate(Point2(offsety,offsety))
-
 
     def draw(self, screen):
         zone = self.handZone_.rotate(Point2(0,0), self.rot_).translate(self.pos_)
@@ -108,55 +149,36 @@ class MainPlayer:
 
 class DrawableCard(Drawable):
     CARDSIZE = (120,180)
+    CARDSIZECENTER = (105, 140)
 
-    def __init__(self, image, pos, rot):
+    def __init__(self, image, pos, rot, zoom):
         # Call the parent class (Sprite) constructor
-        Drawable.__init__(self, pos, rot)
+        Drawable.__init__(self, pos, rot, zoom)
+        self.pos0_ = pos
+        self.rot0_ = rot
+        self.zoom0_ = zoom
         self.image_ = image
-        self.zoom_ = DrawableCard.CARDSIZE
         self.polygon_ = Rec()
         self.polygon_.initFromSize(DrawableCard.CARDSIZE)
-        # [(0, 0),
-        #                  (DrawableCard.CARDSIZE[0], 0),
-        #                  (DrawableCard.CARDSIZE[0], DrawableCard.CARDSIZE[1]),
-        #                  (0, DrawableCard.CARDSIZE[1])]
-        # Fetch the rectangle object that has the dimensions of the image
-        # Update the position of this object by setting the values of rect.x and rect.y
         self.draggable_ = False
         self.isHovered_ = False
 
+    def resetTranforms(self):
+        self.pos_ = self.pos0_
+        self.rot_ = self.rot0_
+        self.zoom_ = self.zoom0_
+
     def draw(self, screen, hb):
-        pos = None
-        if not self.isHovered_:
-            pos = self.pos_
-            zoom = DrawableCard.CARDSIZE
+        # redefines the position/rotation/zoom, then call parent draw
+        if (self.isHovered_ and not self.draggable_):
+            self.pos_ = self.pos0_ - Point2(0, 50)
+            self.zoom_ = (180, 240)
+        elif self.draggable_:
+            self.zoom_ = (180, 240)
         else:
-            zoom = (180, 240)
-            pos = (self.pos_[0], self.pos_[1]-50)
+            self.resetTranforms()
 
-        cpos = self.pos_
-        czoom = self.zoom_
-
-        self.pos_=pos
-        self.zoom_=zoom
-
-        screen.blit(self.getImage(), pos)
-        if hb:
-            pygame.gfxdraw.polygon(screen, self.hitBox()(), (255,0,0,255))
-
-        self.pos_ = cpos
-        self.zoom_ = czoom
-
-    def getImage(self):
-        z = transform.smoothscale(self.image_, self.zoom_)
-        return transform.rotate(z, self.rot_)
-
-    def hitBox(self):
-        # return Rec polygon hitbox
-        zl = self.polygon_.zoom(self.zoom_)
-        rl = zl.rotate(Point2(0,0),self.rot_*math.pi/180)
-
-        return rl.translate(Point2(*self.pos_))
+        super().draw(screen, hb)
 
     def isPointIn(self, point):
         return self.hitBox().isPointIn(point)

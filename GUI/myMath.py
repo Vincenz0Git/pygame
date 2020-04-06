@@ -25,7 +25,13 @@ class Point2:
         return math.sqrt(self.x_**2 + self.y_**2)
 
     def __mul__(self, other):
-        return self.x_*other.x_ + self.y_*other.y_
+        try:
+            return self.x_*other.x_ + self.y_*other.y_
+        except AttributeError:
+            return Point2(other*self.x_, other*self.y_)
+
+    def __truediv__(self,other):
+        return Point2(self.x_/other, self.y_/other)
 
     def __add__(self, other):
         return Point2(self.x_ + other.x_, self.y_ + other.y_)
@@ -94,8 +100,7 @@ class Rec(Polygon):
 
 
     def center(self):
-        pc = self.points_[0] + self.points_[2]
-        return Point2(pc.x_/2, pc.y_/2)
+        return (self.points_[0] + self.points_[2])/2
 
     def rotate(self, origin, angle):
         return Rec(super().rotate(origin, angle))

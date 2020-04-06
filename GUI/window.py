@@ -3,7 +3,7 @@
 import pygame
 from pygame.locals import *
 from GUI.mySprite import SpriteCards
-from GUI.myDrawables import DrawableCard, MainPlayer
+from GUI.myDrawables import DrawableCard, MainPlayer, Board
 from GUI.myMath import Rec, Point2
 
 import pygame.gfxdraw
@@ -27,10 +27,10 @@ class App:
         self.running_ = True
         self.background_ = self.loadImage("resources/table2.png", scaleTuple(RESOLUTION, 1))
         self.cardsSprites_ = SpriteCards('resources/sprites.png')
-        self.offx_ = 0
-        self.offy_ = 0
+        self.off_ = 0
+        self.b = Board(self.cardsSprites_)
         self.mp = MainPlayer(MAINHANDPOS, 0, MAINHANDSIZE, self.cardsSprites_)
-        self.c1 = DrawableCard(self.cardsSprites_.getCardImage(1, 2, DrawableCard.CARDSIZE), (70,80), 30)
+        #self.c1 = DrawableCard(self.cardsSprites_.getCardImage(1, 2, DrawableCard.CARDSIZE), (70,80), 30)
         self.mainLoop()
 
     def mainLoop(self):
@@ -39,8 +39,9 @@ class App:
             self.handleEvents()
 
             self.screen_.blit(self.background_,(0,0))
-            self.c1.draw(self.screen_,True)
+            #self.c1.draw(self.screen_,True)
             self.mp.draw(self.screen_)
+            self.b.draw(self.screen_)
             #pygame.draw.ellipse(self.screen_,(255,0,0),(0,0,500,200))
             #pygame.draw.rect(self.screen_, (0, 128, 255), pygame.Rect(30, 30, 60, 60))
             self.flip()
@@ -57,7 +58,7 @@ class App:
             if event.type == pygame.QUIT:
                 self.running_ = False
             if event.type == pygame.MOUSEMOTION:
-                mouse_x, mouse_y = event.pos
+                mousePos = Point2(*event.pos)
 
                 for c in self.mp.cards_:
                     c.isHovered_ = False
@@ -67,7 +68,7 @@ class App:
                 if self.mp.draggedCard_:
                     card = self.mp.draggedCard_
                     try:
-                        card.pos_ = (mouse_x + self.offx_, mouse_y + self.offy_)
+                        card.pos_ = mousePos+self.off_
                     except:
                         print('error')
 
@@ -77,13 +78,15 @@ class App:
                     self.mp.draggedCard_ = False
                     self.mp.draggedCard_ = card
 
-                mouse_x, mouse_y = event.pos
-                self.offx_ = card.pos_[0] - mouse_x
-                self.offy_ = card.pos_[1] - mouse_y
+                mousePos = Point2(*event.pos)
+                self.off_ = card.pos_ - mousePos
 
             if event.type == pygame.MOUSEBUTTONUP:
                 if self.mp.draggedCard_:
-                    self.mp.draggedCard_ = False
+                    self.mp.draggedCard_.draggable_ = False
+                    self.mp.draggedCard_.isHovered_ = False
+                    self.mp.draggedCard_ = None
+
 
 
     def fill(self, color):
