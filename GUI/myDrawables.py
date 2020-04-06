@@ -47,7 +47,7 @@ class Board:
 
     def initSomeCards(self, sheet):
         self.centralCards_.append(
-         DrawableCard(sheet.getCardImage(2, 3, DrawableCard.CARDSIZE),Point2(290,185),0, DrawableCard.CARDSIZECENTER)
+         DrawableCard(sheet.getCardImage(2, 3, DrawableCard.CARDSIZE),Point2(290,185),5, DrawableCard.CARDSIZECENTER)
         )
 
     def draw(self, screen):
@@ -101,8 +101,8 @@ class MainPlayer:
             if w > self.handZone_.size_[0]:
                 w = self.handZone_.size_[0]
 
-            boardLeft = self.pos_.x_ + (self.handZone_.size_[0] - w)/2
-            boardRight = self.pos_.x_ + self.handZone_.size_[0] - (self.handZone_.size_[0] - w)/2
+            boardLeft = self.pos_.x_ + (self.handZone_.width() - w)/2
+            boardRight = self.pos_.x_ + self.handZone_.width() - (self.handZone_.width() - w)/2
 
             if len(l)%2 == 0:
                 boardLeft -= DrawableCard.CARDSIZE[0]
@@ -111,7 +111,6 @@ class MainPlayer:
                 boardLeft -= DrawableCard.CARDSIZE[0]/2
                 boardRight -= DrawableCard.CARDSIZE[0]/2
 
-            midx = (boardLeft + boardRight)/2
             rot = rotmax + i/(len(l)-1)*(-rotmax - rotmax)
             posx = boardLeft+i/(len(l)-1)*(boardRight - boardLeft)
             t = rotmax/20
@@ -123,7 +122,7 @@ class MainPlayer:
             )
 
             if i > 0:
-                posLeft1 = self.cards_[i-1].hitBox().points_[1]
+                posLeft1 = self.cards_[i-1].hitBox().points_[0]
                 posLeft2 = self.cards_[i-1].hitBox().points_[1]
                 posRight = self.cards_[i].hitBox().points_[0]
 
@@ -131,8 +130,9 @@ class MainPlayer:
                 posLeft = posLeft1.y_*(1-t) + posLeft2.y_*t
                 offsety = posLeft - posRight.y_
 
-                self.cards_[i].pos_ = Point2(self.cards_[i].pos_.x_, self.cards_[i].pos_.y_+offsety)
-                self.cards_[i].polygon_.translate(Point2(offsety,offsety))
+                self.cards_[i].pos0_ += Point2(0, offsety)
+                self.cards_[i].pos_ = self.cards_[i].pos0_
+
 
     def draw(self, screen):
         zone = self.handZone_.rotate(Point2(0,0), self.rot_).translate(self.pos_)

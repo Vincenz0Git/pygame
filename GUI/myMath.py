@@ -97,7 +97,11 @@ class Rec(Polygon):
 
         self.size_ = size
 
+    def width(self):
+        return (self.points_[0]-self.points_[1]).norm()
 
+    def height(self):
+        return (self.points_[0]-self.points_[3]).norm()
 
     def center(self):
         return (self.points_[0] + self.points_[2])/2
