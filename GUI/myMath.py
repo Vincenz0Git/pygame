@@ -63,9 +63,6 @@ class Polygon:
             if new_p.y_ < miny:
                 miny = new_p.y_
 
-        #a = Polygon([Point2(el.x_-minx*(minx<0),el.y_-miny*(miny<0)) for el in l])
-
-        #print([el() for el in a.points_])
         self.currentPoints_ = [Point2(el.x_-minx*(minx<0),el.y_-miny*(miny<0)) for el in l]
         return self.currentPoints_
 
@@ -79,6 +76,10 @@ class Polygon:
 class Rec(Polygon):
     def __init__(self, points = []):
         super().__init__(points)
+        try:
+            self.size_ = ((points[0]-points[1]).norm(),(points[0]-points[3]).norm())
+        except:
+            self.size_ = (0,0)
 
     def initFromSize(self, size):
         self.points_ = [ Point2(0,0),

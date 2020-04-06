@@ -21,6 +21,8 @@ class MainPlayer:
         self.handZone_.initFromSize(size)
         self.pos_ = pos
         self.rot_ = rot
+        self.draggedCard_ = None
+        self.hoveredCard_ = None
         self.initSomeCards(sheet)
 
     def checkCursorIn(self, cursor):
@@ -127,15 +129,23 @@ class DrawableCard(Drawable):
         pos = None
         if not self.isHovered_:
             pos = self.pos_
+            zoom = DrawableCard.CARDSIZE
         else:
+            zoom = (180, 240)
             pos = (self.pos_[0], self.pos_[1]-50)
 
         cpos = self.pos_
+        czoom = self.zoom_
+
         self.pos_=pos
+        self.zoom_=zoom
+
         screen.blit(self.getImage(), pos)
         if hb:
             pygame.gfxdraw.polygon(screen, self.hitBox()(), (255,0,0,255))
+
         self.pos_ = cpos
+        self.zoom_ = czoom
 
     def getImage(self):
         z = transform.smoothscale(self.image_, self.zoom_)

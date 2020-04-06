@@ -53,45 +53,38 @@ class App:
 
     def handleEvents(self):
         for event in pygame.event.get():
+            card = self.mp.checkCursorIn(Point2(*pygame.mouse.get_pos()))
             if event.type == pygame.QUIT:
                 self.running_ = False
             if event.type == pygame.MOUSEMOTION:
                 mouse_x, mouse_y = event.pos
 
-                for card in self.mp.cards_:
-                    card.zoom_ = DrawableCard.CARDSIZE
-                    card.isHovered_ = False
-
-                card = self.mp.checkCursorIn(Point2(*event.pos))
+                for c in self.mp.cards_:
+                    c.isHovered_ = False
                 if card:
-                    card.zoom_ = (180, 240)
                     card.isHovered_ = True
-                    #print(card.pos_)
 
-                if self.c1.isPointIn(Point2(mouse_x, mouse_y)):
-                    self.c1.zoom_ = (140,200)
-                else:
-                    self.c1.zoom_ = DrawableCard.CARDSIZE
-
-                if self.c1.draggable_:
-
+                if self.mp.draggedCard_:
+                    card = self.mp.draggedCard_
                     try:
-                        self.c1.pos_ = (mouse_x + self.offx_, mouse_y + self.offy_)
+                        card.pos_ = (mouse_x + self.offx_, mouse_y + self.offy_)
                     except:
                         print('error')
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if self.c1.isPointIn(Point2(*event.pos)):
-                    print('select card')
-                    mouse_x, mouse_y = event.pos
-                    self.offx_ = self.c1.pos_[0] - mouse_x
-                    self.offy_ = self.c1.pos_[1] - mouse_y
-                    self.c1.draggable_ = True
-                pass
+                if not card == self.mp.draggedCard_:
+                    card.draggable_ = True
+                    self.mp.draggedCard_ = False
+                    self.mp.draggedCard_ = card
+
+                mouse_x, mouse_y = event.pos
+                self.offx_ = card.pos_[0] - mouse_x
+                self.offy_ = card.pos_[1] - mouse_y
 
             if event.type == pygame.MOUSEBUTTONUP:
-                self.c1.draggable_ = False
-                pass
+                if self.mp.draggedCard_:
+                    self.mp.draggedCard_ = False
+
 
     def fill(self, color):
         self.screen_.fill(color)
