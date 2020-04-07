@@ -3,7 +3,7 @@
 import pygame
 from pygame.locals import *
 from GUI.mySprite import SpriteCards
-from GUI.myDrawables import DrawableCard, MainPlayer, Board
+from GUI.myDrawables import DrawableCard, MainPlayerZone, Board
 from GUI.myMath import Rec, Point2
 
 import pygame.gfxdraw
@@ -29,7 +29,7 @@ class App:
         self.cardsSprites_ = SpriteCards('resources/sprites.png')
         self.off_ = 0
         self.b = Board(self.cardsSprites_)
-        self.mp = MainPlayer(MAINHANDPOS, 0, MAINHANDSIZE, self.cardsSprites_)
+        self.mp = MainPlayerZone(self.cardsSprites_)
         #self.c1 = DrawableCard(self.cardsSprites_.getCardImage(1, 2, DrawableCard.CARDSIZE), (70,80), 30)
         self.mainLoop()
 

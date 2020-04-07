@@ -58,13 +58,25 @@ class Board:
             card.draw(screen, True)
 
 
-class MainPlayer:
-    def __init__(self, pos, rot, size, sheet):
+class PlayerZone(Rec):
+    def __init__(self, points, sheet):
+        super().__init__(points)
         self.cards_ = []
-        self.handZone_ = Rec()
-        self.handZone_.initFromSize(size)
-        self.pos_ = pos
-        self.rot_ = rot
+
+    def topLeft(self):
+        return self.points_[0]
+
+    def getPosFromRelative(self, point):
+        return self.topLeft()+point.x_*self.ex() + point.y_*self.ey()
+
+    def getPosFromAbs(self, point):
+        return point - self.topLeft()
+
+
+class MainPlayerZone(PlayerZone):
+    def __init__(self, sheet):
+        points = [Point2(150,550), Point2(850,550), Point2(850,900), Point2(150,900)]
+        super().__init__(points, sheet)
         self.draggedCard_ = None
         self.hoveredCard_ = None
         self.initSomeCards(sheet)
@@ -87,7 +99,7 @@ class MainPlayer:
 
     def initSomeCards(self, sheet):
         l = [(1, 2), (2, 4), (3, 8), (2, 5), (0, 3), (1, 10), (3, 0), (2, 5), (0, 3), (1, 10), (3, 0)]
-        l1 = [(1, 2), (2, 4), (3, 8), (2, 5), (0, 3), (1, 10)]
+        l1 = [(1, 2), (2, 4), (3, 8), (2, 5), (0, 3), (1, 10), (2,1)]
         l1 = [(1, 2), (2, 4)]
 
         for i, (a,b) in enumerate(l):
@@ -98,27 +110,23 @@ class MainPlayer:
             if rotmax > 20:
                 rotmax = 20
 
-            if w > self.handZone_.size_[0]:
-                w = self.handZone_.size_[0]
+            if w > self.size_[0]:
+                w = self.size_[0]
 
-            boardLeft = self.pos_.x_ + (self.handZone_.width() - w)/2
-            boardRight = self.pos_.x_ + self.handZone_.width() - (self.handZone_.width() - w)/2
+            boardLeft = self.getPosFromRelative(Point2((self.width() - w)/2,0))
+            boardRight = self.getPosFromRelative(Point2(self.width() - (self.width() - w)/2,0))
 
-            if len(l)%2 == 0:
-                boardLeft -= DrawableCard.CARDSIZE[0]
-                boardRight -= DrawableCard.CARDSIZE[0]
-            else:
-                boardLeft -= DrawableCard.CARDSIZE[0]/2
-                boardRight -= DrawableCard.CARDSIZE[0]/2
+            boardLeft -= DrawableCard.CARDSIZE[0]/2*self.ex()
+            boardRight -= DrawableCard.CARDSIZE[0]*self.ex()
 
             rot = rotmax + i/(len(l)-1)*(-rotmax - rotmax)
-            posx = boardLeft+i/(len(l)-1)*(boardRight - boardLeft)
+            pos = self.getPosFromRelative(self.getPosFromAbs(boardLeft) + i/(len(l)-1)*(boardRight - boardLeft))
             t = rotmax/20
-            posy = self.pos_.y_+t*self.handZone_.size_[1]/10
-            pos = (posx, posy)
+
+            #pos += Point2(0,self.size_[1]/10)
 
             self.cards_.append(
-             DrawableCard(sheet.getCardImage(a, b, DrawableCard.CARDSIZE),Point2(*pos),rot,DrawableCard.CARDSIZE)
+             DrawableCard(sheet.getCardImage(a, b, DrawableCard.CARDSIZE),pos,rot,DrawableCard.CARDSIZE)
             )
 
             if i > 0:
@@ -133,10 +141,8 @@ class MainPlayer:
                 self.cards_[i].pos0_ += Point2(0, offsety)
                 self.cards_[i].pos_ = self.cards_[i].pos0_
 
-
     def draw(self, screen):
-        zone = self.handZone_.rotate(Point2(0,0), self.rot_).translate(self.pos_)
-        pygame.gfxdraw.polygon(screen, zone(), (0,255,0,255))
+        pygame.gfxdraw.polygon(screen, self(), (0,255,0,255))
         hoveredcard = None
         for card in self.cards_:
             if not card.isHovered_:

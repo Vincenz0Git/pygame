@@ -24,11 +24,12 @@ class Point2:
     def norm(self):
         return math.sqrt(self.x_**2 + self.y_**2)
 
+    def __rmul__(self, scalar):
+        return Point2(scalar*self.x_, scalar*self.y_)
+
     def __mul__(self, other):
-        try:
+        if isinstance(other, Point2):
             return self.x_*other.x_ + self.y_*other.y_
-        except AttributeError:
-            return Point2(other*self.x_, other*self.y_)
 
     def __truediv__(self,other):
         return Point2(self.x_/other, self.y_/other)
@@ -55,6 +56,12 @@ class Polygon:
     def zoom(self, zoom):
         self.currentPoints_ = [Point2(point.x_ * zoom.x_,point.y_*zoom.y_) for point in self.points_]
         return self.currentPoints_
+
+    def ex(self):
+        return (self.points_[1]-self.points_[0])/(self.points_[1]-self.points_[0]).norm()
+
+    def ey(self):
+        return (self.points_[3]-self.points_[0])/(self.points_[3]-self.points_[0]).norm()
 
     def rotate(self, origin, angle):
 
