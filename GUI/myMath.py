@@ -77,6 +77,7 @@ class Polygon:
                 miny = new_p.y_
 
         self.currentPoints_ = [Point2(el.x_-minx*(minx<0),el.y_-miny*(miny<0)) for el in l]
+        #self.currentPoints_ = [Point2(el.x_,el.y_) for el in l]
         return self.currentPoints_
 
     def __call__(self, formatPoint2):

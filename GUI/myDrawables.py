@@ -102,6 +102,8 @@ class MainPlayerZone(PlayerZone):
         l1 = [(1, 2), (2, 4), (3, 8), (2, 5), (0, 3), (1, 10), (2,1)]
         l1 = [(1, 2), (2, 4)]
 
+        posy = 50
+
         for i, (a,b) in enumerate(l):
 
             w = (len(l)-1)*DrawableCard.CARDSIZE[0]/2
@@ -117,11 +119,15 @@ class MainPlayerZone(PlayerZone):
             boardRight = self.getPosFromRelative(Point2(self.width() - (self.width() - w)/2,0))
 
             boardLeft -= DrawableCard.CARDSIZE[0]/2*self.ex()
-            boardRight -= DrawableCard.CARDSIZE[0]*self.ex()
+            boardRight -= DrawableCard.CARDSIZE[0]/2*self.ex()
 
             rot = rotmax + i/(len(l)-1)*(-rotmax - rotmax)
-            pos = self.getPosFromRelative(self.getPosFromAbs(boardLeft) + i/(len(l)-1)*(boardRight - boardLeft))
+            relpos = self.getPosFromAbs(boardLeft) + i/(len(l)-1)*(boardRight - boardLeft)
+            overlap = w/(len(l)-1)
             t = rotmax/20
+            posy -= math.sin(rot*math.pi/180)*DrawableCard.CARDSIZE[0]-math.tan(rot*math.pi/180)*overlap
+            relpos += Point2(0,posy)
+            pos = self.getPosFromRelative(relpos)
 
             #pos += Point2(0,self.size_[1]/10)
 
@@ -129,17 +135,17 @@ class MainPlayerZone(PlayerZone):
              DrawableCard(sheet.getCardImage(a, b, DrawableCard.CARDSIZE),pos,rot,DrawableCard.CARDSIZE)
             )
 
-            if i > 0:
-                posLeft1 = self.cards_[i-1].hitBox().points_[0]
-                posLeft2 = self.cards_[i-1].hitBox().points_[1]
-                posRight = self.cards_[i].hitBox().points_[0]
-
-                t = -(posLeft1.x_ - posRight.x_)/DrawableCard.CARDSIZE[0]
-                posLeft = posLeft1.y_*(1-t) + posLeft2.y_*t
-                offsety = posLeft - posRight.y_
-
-                self.cards_[i].pos0_ += Point2(0, offsety)
-                self.cards_[i].pos_ = self.cards_[i].pos0_
+            # if i > 0:
+            #     posLeft1 = self.cards_[i-1].hitBox().points_[0]
+            #     posLeft2 = self.cards_[i-1].hitBox().points_[1]
+            #     posRight = self.cards_[i].hitBox().points_[0]
+            #
+            #     t = -(posLeft1.x_ - posRight.x_)/DrawableCard.CARDSIZE[0]
+            #     posLeft = posLeft1.y_*(1-t) + posLeft2.y_*t
+            #     offsety = posLeft - posRight.y_
+            #
+            #     self.cards_[i].pos0_ += Point2(0, offsety)
+            #     self.cards_[i].pos_ = self.cards_[i].pos0_
 
     def draw(self, screen):
         pygame.gfxdraw.polygon(screen, self(), (0,255,0,255))
