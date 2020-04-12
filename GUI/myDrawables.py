@@ -72,6 +72,47 @@ class PlayerZone(Rec):
     def getPosFromAbs(self, point):
         return point - self.topLeft()
 
+    def computeCardPos(self, nCards):
+        w = (nCards-1)*DrawableCard.CARDSIZE[0]/2
+
+        rotmax = 2*nCards
+        if rotmax > 15:
+            rotmax = 15
+
+        if w > self.size_[0]:
+            w = self.size_[0]
+
+        boardLeft = self.getPosFromRelative(Point2((self.width() - w)/2,0))
+        boardRight = self.getPosFromRelative(Point2(self.width() - (self.width() - w)/2,0))
+
+        boardLeft -= DrawableCard.CARDSIZE[0]/2*self.ex()
+        boardRight -= DrawableCard.CARDSIZE[0]/2*self.ex()
+
+        posy = 50
+        overlap = DrawableCard.CARDSIZE[0]-w/(nCards-1)
+        rot = []
+        pos = []
+
+        m = 10000
+
+        for i in range(nCards):
+            rot.append(rotmax + i/(nCards-1)*(-rotmax - rotmax))
+            relpos = self.getPosFromAbs(boardLeft) + i/(nCards-1)*(boardRight - boardLeft)
+            prevoff = math.tan(rot[-1]*math.pi/180)*overlap
+            if i > 0:
+                posy -= math.sin(rot[-1]*math.pi/180)*DrawableCard.CARDSIZE[0] - prevoff
+            relpos += Point2(0,posy)
+
+            pos.append(self.getPosFromRelative(relpos))
+            if relpos.y_ < m:
+                m = relpos.y_
+
+        pos = [el - Point2(0,m) for el in pos]
+
+        return pos, rot
+
+
+
 
 class MainPlayerZone(PlayerZone):
     def __init__(self, sheet):
@@ -82,6 +123,8 @@ class MainPlayerZone(PlayerZone):
         self.initSomeCards(sheet)
 
     def checkCursorIn(self, cursor):
+        if self.draggedCard_:
+            return None
         listIn = []
         for card in self.cards_:
             if card.hitBox().isPointIn(cursor):
@@ -98,65 +141,39 @@ class MainPlayerZone(PlayerZone):
 
 
     def initSomeCards(self, sheet):
-        l = [(1, 2), (2, 4), (3, 8), (2, 5), (0, 3), (1, 10), (3, 0), (2, 5), (0, 3), (1, 10), (3, 0)]
+        l = [(1, 2), (2, 4), (3, 8), (2, 5), (0, 3), (1, 10), (3, 0), (2, 5), (0, 3), (1, 10), (3, 0), (2, 2), (3, 4), (0, 5)]
         l1 = [(1, 2), (2, 4), (3, 8), (2, 5), (0, 3), (1, 10), (2,1)]
         l1 = [(1, 2), (2, 4)]
 
-        posy = 50
+        pos, rot = self.computeCardPos(len(l))
 
-        for i, (a,b) in enumerate(l):
-
-            w = (len(l)-1)*DrawableCard.CARDSIZE[0]/2
-
-            rotmax = 3*len(l)
-            if rotmax > 20:
-                rotmax = 20
-
-            if w > self.size_[0]:
-                w = self.size_[0]
-
-            boardLeft = self.getPosFromRelative(Point2((self.width() - w)/2,0))
-            boardRight = self.getPosFromRelative(Point2(self.width() - (self.width() - w)/2,0))
-
-            boardLeft -= DrawableCard.CARDSIZE[0]/2*self.ex()
-            boardRight -= DrawableCard.CARDSIZE[0]/2*self.ex()
-
-            rot = rotmax + i/(len(l)-1)*(-rotmax - rotmax)
-            relpos = self.getPosFromAbs(boardLeft) + i/(len(l)-1)*(boardRight - boardLeft)
-            overlap = w/(len(l)-1)
-            t = rotmax/20
-            posy -= math.sin(rot*math.pi/180)*DrawableCard.CARDSIZE[0]-math.tan(rot*math.pi/180)*overlap
-            relpos += Point2(0,posy)
-            pos = self.getPosFromRelative(relpos)
-
-            #pos += Point2(0,self.size_[1]/10)
-
+        for i in range(len(l)):
             self.cards_.append(
-             DrawableCard(sheet.getCardImage(a, b, DrawableCard.CARDSIZE),pos,rot,DrawableCard.CARDSIZE)
+             DrawableCard(sheet.getCardImage(l[i][0], l[i][1], DrawableCard.CARDSIZE),pos[i],rot[i],DrawableCard.CARDSIZE)
             )
-
-            # if i > 0:
-            #     posLeft1 = self.cards_[i-1].hitBox().points_[0]
-            #     posLeft2 = self.cards_[i-1].hitBox().points_[1]
-            #     posRight = self.cards_[i].hitBox().points_[0]
-            #
-            #     t = -(posLeft1.x_ - posRight.x_)/DrawableCard.CARDSIZE[0]
-            #     posLeft = posLeft1.y_*(1-t) + posLeft2.y_*t
-            #     offsety = posLeft - posRight.y_
-            #
-            #     self.cards_[i].pos0_ += Point2(0, offsety)
-            #     self.cards_[i].pos_ = self.cards_[i].pos0_
 
     def draw(self, screen):
         pygame.gfxdraw.polygon(screen, self(), (0,255,0,255))
         hoveredcard = None
+        ncards = len(self.cards_) - (not self.draggedCard_ == None)
+        pos, rot = self.computeCardPos(ncards)
+
+        self.cards_[1].setPos0(pos[1])
+
+        i = 0
+        for card in self.cards_:
+            if not card == self.draggedCard_:
+                card.setPos0(pos[i])
+                card.setrot0(rot[i])
+                i+=1
+
         for card in self.cards_:
             if not card.isHovered_:
                 card.draw(screen,True)
             else:
                 hoveredcard = card
-        if hoveredcard:
-            hoveredcard.draw(screen,True)
+            if hoveredcard:
+                hoveredcard.draw(screen,True)
 
 
 class DrawableCard(Drawable):
@@ -179,6 +196,15 @@ class DrawableCard(Drawable):
         self.pos_ = self.pos0_
         self.rot_ = self.rot0_
         self.zoom_ = self.zoom0_
+
+    def setPos0(self, pos):
+        self.pos0_ = pos
+        self.pos_ = pos
+
+    def setrot0(self, rot):
+        self.rot0_ = rot
+        self.rot_ = rot
+
 
     def draw(self, screen, hb):
         # redefines the position/rotation/zoom, then call parent draw

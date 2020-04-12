@@ -75,7 +75,7 @@ class App:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if not card == self.mp.draggedCard_:
                     card.draggable_ = True
-                    self.mp.draggedCard_ = False
+                    #self.mp.draggedCard_ = False
                     self.mp.draggedCard_ = card
 
                 mousePos = Point2(*event.pos)
