@@ -158,8 +158,7 @@ class MainPlayerZone(PlayerZone):
         ncards = len(self.cards_) - (not self.draggedCard_ == None)
         pos, rot = self.computeCardPos(ncards)
 
-        self.cards_[1].setPos0(pos[1])
-
+        #TODO probably not necessary to update each time
         i = 0
         for card in self.cards_:
             if not card == self.draggedCard_:
@@ -168,12 +167,12 @@ class MainPlayerZone(PlayerZone):
                 i+=1
 
         for card in self.cards_:
-            if not card.isHovered_:
+            if not card.isHovered_ and not card.draggable_:
                 card.draw(screen,True)
             else:
                 hoveredcard = card
-            if hoveredcard:
-                hoveredcard.draw(screen,True)
+        if hoveredcard:
+            hoveredcard.draw(screen,True)
 
 
 class DrawableCard(Drawable):

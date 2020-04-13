@@ -66,9 +66,8 @@ class App:
                     card.isHovered_ = True
 
                 if self.mp.draggedCard_:
-                    card = self.mp.draggedCard_
                     try:
-                        card.pos_ = mousePos+self.off_
+                        self.mp.draggedCard_.pos_ = mousePos+self.off_
                     except:
                         print('error')
 
