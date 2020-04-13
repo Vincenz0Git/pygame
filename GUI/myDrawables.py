@@ -44,6 +44,7 @@ class Board:
         self.zonePlays_ = Rec([Point2(280,330), Point2(800,330), Point2(800,480), Point2(280,480)])
         self.d = Deck(sheet.getCardImage(4, 1, DrawableCard.CARDSIZE),Point2(160,180),0, DrawableCard.CARDSIZECENTER)
         self.initSomeCards(sheet)
+        self.mp_ = MainPlayerZone(sheet)
 
     def initSomeCards(self, sheet):
         self.centralCards_.append(
@@ -56,6 +57,7 @@ class Board:
         screen.blit(self.d.getImage(), self.d.pos_())
         for card in self.centralCards_:
             card.draw(screen, True)
+        self.mp_.draw(screen)
 
 
 class PlayerZone(Rec):

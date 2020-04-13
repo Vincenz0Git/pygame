@@ -28,8 +28,8 @@ class App:
         self.background_ = self.loadImage("resources/table2.png", scaleTuple(RESOLUTION, 1))
         self.cardsSprites_ = SpriteCards('resources/sprites.png')
         self.off_ = 0
-        self.b = Board(self.cardsSprites_)
-        self.mp = MainPlayerZone(self.cardsSprites_)
+        self.board_ = Board(self.cardsSprites_)
+        #self.mp = MainPlayerZone(self.cardsSprites_)
         #self.c1 = DrawableCard(self.cardsSprites_.getCardImage(1, 2, DrawableCard.CARDSIZE), (70,80), 30)
         self.mainLoop()
 
@@ -39,9 +39,7 @@ class App:
             self.handleEvents()
 
             self.screen_.blit(self.background_,(0,0))
-            #self.c1.draw(self.screen_,True)
-            self.mp.draw(self.screen_)
-            self.b.draw(self.screen_)
+            self.board_.draw(self.screen_)
             #pygame.draw.ellipse(self.screen_,(255,0,0),(0,0,500,200))
             #pygame.draw.rect(self.screen_, (0, 128, 255), pygame.Rect(30, 30, 60, 60))
             self.flip()
@@ -54,37 +52,37 @@ class App:
 
     def handleEvents(self):
         for event in pygame.event.get():
-            card = self.mp.checkCursorIn(Point2(*pygame.mouse.get_pos()))
+            card = self.board_.mp_.checkCursorIn(Point2(*pygame.mouse.get_pos()))
             if event.type == pygame.QUIT:
                 self.running_ = False
             if event.type == pygame.MOUSEMOTION:
                 mousePos = Point2(*event.pos)
 
-                for c in self.mp.cards_:
+                for c in self.board_.mp_.cards_:
                     c.isHovered_ = False
                 if card:
                     card.isHovered_ = True
 
-                if self.mp.draggedCard_:
+                if self.board_.mp_.draggedCard_:
                     try:
-                        self.mp.draggedCard_.pos_ = mousePos+self.off_
+                        self.board_.mp_.draggedCard_.pos_ = mousePos+self.off_
                     except:
                         print('error')
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if not card == self.mp.draggedCard_:
+                if not card == self.board_.mp_.draggedCard_:
                     card.draggable_ = True
-                    #self.mp.draggedCard_ = False
-                    self.mp.draggedCard_ = card
+                    #self.board_.mp_.draggedCard_ = False
+                    self.board_.mp_.draggedCard_ = card
 
                 mousePos = Point2(*event.pos)
                 self.off_ = card.pos_ - mousePos
 
             if event.type == pygame.MOUSEBUTTONUP:
-                if self.mp.draggedCard_:
-                    self.mp.draggedCard_.draggable_ = False
-                    self.mp.draggedCard_.isHovered_ = False
-                    self.mp.draggedCard_ = None
+                if self.board_.mp_.draggedCard_:
+                    self.board_.mp_.draggedCard_.draggable_ = False
+                    self.board_.mp_.draggedCard_.isHovered_ = False
+                    self.board_.mp_.draggedCard_ = None
 
 
 
