@@ -37,14 +37,12 @@ class Deck(Drawable):
         self.polygon_.initFromSize(zoom)
 
 
-class Board:
+class CentralZone:
     def __init__(self, sheet):
         self.centralCards_ = []
-        self.zoneCards_ = Rec([Point2(280,180), Point2(800,180), Point2(800,330), Point2(280,330)])
-        self.zonePlays_ = Rec([Point2(280,330), Point2(800,330), Point2(800,480), Point2(280,480)])
+        self.zoneCards_ = Rec([Point2(280,180), Point2(800,180), Point2(800,480), Point2(280,480)])
         self.d = Deck(sheet.getCardImage(4, 1, DrawableCard.CARDSIZE),Point2(160,180),0, DrawableCard.CARDSIZECENTER)
         self.initSomeCards(sheet)
-        self.mp_ = MainPlayerZone(sheet)
 
     def initSomeCards(self, sheet):
         self.centralCards_.append(
@@ -53,10 +51,17 @@ class Board:
 
     def draw(self, screen):
         pygame.gfxdraw.polygon(screen, self.zoneCards_(), (0,0,255,255))
-        pygame.gfxdraw.polygon(screen, self.zonePlays_(), (0,0,255,255))
         screen.blit(self.d.getImage(), self.d.pos_())
         for card in self.centralCards_:
             card.draw(screen, True)
+
+class Board:
+    def __init__(self, sheet):
+        self.mp_ = MainPlayerZone(sheet)
+        self.cz_ = CentralZone(sheet)
+
+    def draw(self, screen):
+        self.cz_.draw(screen)
         self.mp_.draw(screen)
 
 
