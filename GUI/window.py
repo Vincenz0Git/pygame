@@ -10,9 +10,7 @@ import pygame.gfxdraw
 
 from math import floor
 
-RESOLUTION = (1000, 700)
-MAINHANDSIZE = (700,150)
-MAINHANDPOS = Point2(150,550)
+from GUI.myCoord import *
 
 
 def scaleTuple(t,scale):
@@ -80,6 +78,8 @@ class App:
 
             if event.type == pygame.MOUSEBUTTONUP:
                 if self.board_.mp_.draggedCard_:
+                    if self.board_.isInCentral(Point2(*event.pos)):
+                        self.board_.getCentralClosest(Point2(*event.pos))
                     self.board_.mp_.draggedCard_.draggable_ = False
                     self.board_.mp_.draggedCard_.isHovered_ = False
                     self.board_.mp_.draggedCard_ = None

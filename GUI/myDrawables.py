@@ -1,5 +1,6 @@
 from pygame import transform
 from GUI.myMath import Point2, Rec
+from GUI.myCoord import *
 import pygame.gfxdraw
 import math
 
@@ -37,23 +38,26 @@ class Deck(Drawable):
         self.polygon_.initFromSize(zoom)
 
 
-class CentralZone:
+class CentralZone(Rec):
     def __init__(self, sheet):
-        self.centralCards_ = []
-        self.zoneCards_ = Rec([Point2(280,180), Point2(800,180), Point2(800,480), Point2(280,480)])
+        # TODO class zone? with cards_ and rec?
+        self.cards_ = []
+        super().__init__(CENTRALZONE)
+        #self.zoneCards_ = Rec(CENTRALZONE)
         self.d = Deck(sheet.getCardImage(4, 1, DrawableCard.CARDSIZE),Point2(160,180),0, DrawableCard.CARDSIZECENTER)
         self.initSomeCards(sheet)
 
     def initSomeCards(self, sheet):
-        self.centralCards_.append(
+        self.cards_.append(
          DrawableCard(sheet.getCardImage(2, 3, DrawableCard.CARDSIZE),Point2(290,185),5, DrawableCard.CARDSIZECENTER)
         )
 
     def draw(self, screen):
-        pygame.gfxdraw.polygon(screen, self.zoneCards_(), (0,0,255,255))
+        pygame.gfxdraw.polygon(screen, self(), (0,0,255,255))
         screen.blit(self.d.getImage(), self.d.pos_())
-        for card in self.centralCards_:
+        for card in self.cards_:
             card.draw(screen, True)
+
 
 class Board:
     def __init__(self, sheet):
@@ -63,6 +67,13 @@ class Board:
     def draw(self, screen):
         self.cz_.draw(screen)
         self.mp_.draw(screen)
+
+    def isInCentral(self, point):
+        return self.cz_.isPointIn(point)
+
+    def getCentralClosest(self, point):
+        for card in self.cz_.cards_:
+            print(card.hitBox().center()())
 
 
 class PlayerZone(Rec):
@@ -123,8 +134,8 @@ class PlayerZone(Rec):
 
 class MainPlayerZone(PlayerZone):
     def __init__(self, sheet):
-        points = [Point2(150,550), Point2(850,550), Point2(850,900), Point2(150,900)]
-        super().__init__(points, sheet)
+        #points = [Point2(150,550), Point2(850,550), Point2(850,900), Point2(150,900)]
+        super().__init__(MPZONE, sheet)
         self.draggedCard_ = None
         self.hoveredCard_ = None
         self.initSomeCards(sheet)
