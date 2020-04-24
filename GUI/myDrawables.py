@@ -3,6 +3,7 @@ from GUI.myMath import Point2, Rec
 from GUI.myCoord import *
 import pygame.gfxdraw
 import math
+from random import random
 
 
 class Drawable:
@@ -43,18 +44,38 @@ class CentralZone(Rec):
         # TODO class zone? with cards_ and rec?
         self.cards_ = []
         super().__init__(CENTRALZONE)
-        #self.zoneCards_ = Rec(CENTRALZONE)
-        self.d = Deck(sheet.getCardImage(4, 1, DrawableCard.CARDSIZE),Point2(160,180),0, DrawableCard.CARDSIZECENTER)
+        self.deck_ = Deck(sheet.getCardImage(4, 1, DrawableCard.CARDSIZE),Point2(160,180),0, DrawableCard.CARDSIZECENTER)
         self.initSomeCards(sheet)
 
+    def computePos(self, nCards):
+        nMax = self.width()//130
+        if nCards < nMax-1:
+            return [Point2(290+i*130,185) for i in range(nCards)]
+        else:
+            return [Point2(290+i*self.width()//(nCards+1), 185) for i in range(nCards)]
+
     def initSomeCards(self, sheet):
-        self.cards_.append(
-         DrawableCard(sheet.getCardImage(2, 3, DrawableCard.CARDSIZE),Point2(290,185),5, DrawableCard.CARDSIZECENTER)
-        )
+        l = [(2,3),(3,6),(1,2),(0,0),(1,9), (2,5), (3, 10)]
+        for i, el in enumerate(l):
+            self.addCard(
+             DrawableCard(sheet.getCardImage(el[0], el[1], DrawableCard.CARDSIZE),Point2(0,0),10*(random()-0.5), DrawableCard.CARDSIZECENTER)
+            )
+
+    def removeCard(self, index):
+        self.cards_.pop(index)
+        newpos = self.computePos(len(self.cards_))
+        for i, card in enumerate(self.cards_):
+            card.setPos0(newpos[i])
+
+    def addCard(self, card):
+        self.cards_.append(card)
+        newpos = self.computePos(len(self.cards_))
+        for i, card in enumerate(self.cards_):
+            card.setPos0(newpos[i])
 
     def draw(self, screen):
         pygame.gfxdraw.polygon(screen, self(), (0,0,255,255))
-        screen.blit(self.d.getImage(), self.d.pos_())
+        screen.blit(self.deck_.getImage(), self.deck_.pos_())
         for card in self.cards_:
             card.draw(screen, True)
 
@@ -72,8 +93,15 @@ class Board:
         return self.cz_.isPointIn(point)
 
     def getCentralClosest(self, point):
-        for card in self.cz_.cards_:
-            print(card.hitBox().center()())
+        min = 1000
+        imin = 0
+        for i, card in enumerate(self.cz_.cards_):
+            dist = (point-card.hitBox().center()).norm()
+            if dist < min:
+                min = dist
+                imin = i
+
+        print(imin)
 
 
 class PlayerZone(Rec):
@@ -134,7 +162,6 @@ class PlayerZone(Rec):
 
 class MainPlayerZone(PlayerZone):
     def __init__(self, sheet):
-        #points = [Point2(150,550), Point2(850,550), Point2(850,900), Point2(150,900)]
         super().__init__(MPZONE, sheet)
         self.draggedCard_ = None
         self.hoveredCard_ = None
