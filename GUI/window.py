@@ -3,7 +3,7 @@
 import pygame
 from pygame.locals import *
 from GUI.mySprite import SpriteCards
-from GUI.myDrawables import DrawableCard, MainPlayerZone, Board
+from GUI.drawableEnv import Board
 from GUI.myMath import Rec, Point2
 
 import pygame.gfxdraw
